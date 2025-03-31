@@ -40,8 +40,11 @@ apk add build-base perl wget tar gnupg
 wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xzf install-tl-unx.tar.gz
 cd install-tl-*
-TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=full --no-interaction
+TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=basic --no-interaction
+#TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=basic --no-interaction
+
 cd ..
+
 rm -rf install-tl-* install-tl-unx.tar.gz
 
 # Create symlinks for all binaries (with improved path handling)
