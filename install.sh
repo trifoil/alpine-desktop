@@ -9,24 +9,6 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Create post-reboot cleanup script
-cat > /etc/post-install-cleanup.sh << 'EOL'
-#!/bin/bash
-
-# Remove unwanted GNOME applications
-apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
-
-# Remove script itself and cleanup
-rm -f /etc/post-install-cleanup.sh
-rm -f /etc/local.d/post-install-cleanup.start
-
-# Enable all services
-rc-update add gdm default
-rc-service gdm start
-
-echo "Unwanted applications removed successfully!"
-EOL
-
 # Make the cleanup script executable
 chmod +x /etc/post-install-cleanup.sh
 
