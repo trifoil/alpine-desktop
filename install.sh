@@ -19,21 +19,50 @@ fi
 # Update package lists
 apk update && apk upgrade
 
-# Install Xorg and GNOME
+# Install Xorg and GNOME core without unwanted applications
 setup-xorg-base 
-apk add gnome
-apk add gnome-apps-core
-apk add gnome-apps-extra
 
+# Install GNOME core without specific applications
+apk add gnome --no-cache \
+    --exclude gnome-calendar \
+    --exclude gnome-music \
+    --exclude cheese \
+    --exclude gnome-tour \
+    --exclude totem \
+    --exclude yelp \
+    --exclude simple-scan
+
+# Install additional GNOME components carefully
+apk add gnome-apps-core --no-cache \
+    --exclude gnome-calendar \
+    --exclude gnome-music \
+    --exclude cheese \
+    --exclude gnome-tour \
+    --exclude totem \
+    --exclude yelp \
+    --exclude simple-scan
+
+apk add gnome-apps-extra --no-cache \
+    --exclude gnome-calendar \
+    --exclude gnome-music \
+    --exclude cheese \
+    --exclude gnome-tour \
+    --exclude totem \
+    --exclude yelp \
+    --exclude simple-scan
+
+# Start and enable GDM
 rc-service gdm start
 rc-update add gdm
-apk add bash
-apk add bash-completion
-apk add thunar-volman
+
+# Install additional required packages
+apk add bash bash-completion thunar-volman
+
+# Update again
 apk update
 
+# Create user
 adduser x -h /home/x
-
 
 # Final system update and reboot
 apk update && apk upgrade
