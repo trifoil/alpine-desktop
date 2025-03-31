@@ -8,6 +8,20 @@ if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' /et
     echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 fi
 
+# Prompt to create a new user (skip if already exists)
+read -p "Do you want to create a new user for GNOME? (y/n): " create_user
+if [[ $create_user =~ ^[Yy]$ ]]; then
+    read -p "Enter username: " username
+    if id "$username" &>/dev/null; then
+        echo "User $username already exists. Skipping creation."
+    else
+        # Create user with a home directory and add to necessary groups
+        adduser -D "$username" -G wheel,audio,video,netdev
+        passwd "$username"  # Prompt to set password
+        echo "User $username created successfully."
+    fi
+fi
+
 # Install only the core GNOME components (no meta-package)
 apk add --no-cache \
     gdm \
@@ -46,6 +60,8 @@ apk add --no-cache --virtual .unwanted-gnome-apps \
     gnome-documents \
     simple-scan
 
-echo "GNOME installed successfully without unwanted apps."
+# Enable GDM (GNOME Display Manager) on boot
+rc-update add gdm default
 
+echo "GNOME installed successfully without unwanted apps. Rebooting..."
 reboot
