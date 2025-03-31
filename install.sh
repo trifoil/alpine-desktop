@@ -13,18 +13,30 @@ fi
 cat > /etc/post-install-cleanup.sh << 'EOL'
 #!/bin/bash
 
-# Remove unwanted GNOME applications
-apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
+FLAG_FILE="/etc/reboot-counter"
 
-# Remove script itself and cleanup
-rm -f /etc/post-install-cleanup.sh
-rm -f /etc/local.d/post-install-cleanup.start
+# Check if this is the second reboot
+if [ -f "$FLAG_FILE" ]; then
+    echo "Running post-install cleanup..."
 
-# Enable all services
-rc-update add gdm default
-rc-service gdm start
+    # Remove unwanted GNOME applications
+    apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
 
-echo "Unwanted applications removed successfully!"
+    # Remove script and cleanup files
+    rm -f "$FLAG_FILE"
+    rm -f /etc/post-install-cleanup.sh
+    rm -f /etc/local.d/post-install-cleanup.start
+
+    # Enable GDM and start it
+    rc-update add gdm default
+    rc-service gdm start
+
+    echo "Cleanup complete!"
+else
+    # First reboot: create flag file
+    touch "$FLAG_FILE"
+    echo "First reboot detected. Cleanup will run after the next reboot."
+fi
 EOL
 
 # Make the cleanup script executable
@@ -33,7 +45,7 @@ chmod +x /etc/post-install-cleanup.sh
 # Create autostart entry for the cleanup script
 cat > /etc/local.d/post-install-cleanup.start << 'EOL'
 #!/bin/sh
-/etc/post-install-cleanup.sh && rc-service local stop
+/etc/post-install-cleanup.sh
 EOL
 
 chmod +x /etc/local.d/post-install-cleanup.start
@@ -84,5 +96,6 @@ echo "Performing final updates..."
 apk update && apk upgrade
 
 echo "Installation complete! The system will now reboot..."
-echo "After reboot, the unwanted applications will be automatically removed."
+echo "After the first reboot, a flag will be set."
+echo "After the second reboot, unwanted applications will be removed."
 reboot
