@@ -3,17 +3,17 @@
 # Update and upgrade system
 apk update && apk upgrade
 
-# Add community and testing repositories if not already added
+# Add main and community repositories if not already added
+if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' /etc/apk/repositories; then
+    echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/main" >> /etc/apk/repositories
+fi
+
 if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' /etc/apk/repositories; then
     echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 fi
 
-if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing' /etc/apk/repositories; then
-    echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing" >> /etc/apk/repositories
-fi
+# Update package lists
 apk update && apk upgrade
-# Update repositories
-apk update
 
 # Install Xorg and GNOME
 apk add xorg-server xf86-video-vesa xf86-input-libinput
