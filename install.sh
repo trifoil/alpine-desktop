@@ -15,10 +15,17 @@ echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositori
 # Update & upgrade
 apk update && apk upgrade
 
+# Fix UTF-8 locale for btop
+apk add lang
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
 # Install GNOME
 setup-desktop gnome
 
-# Install essential tools
+# Install essential tools (now including btop)
 apk add vscodium btop curl nano fastfetch
 
 # Install Rust
@@ -47,6 +54,11 @@ latexmk --version
 
 # Install LaTeX tools for VSCodium
 apk add latexmk chktex
+
+# Install GitHub Desktop via Flatpak
+apk add flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub io.github.shiftey.Desktop -y
 
 # Reboot
 reboot
