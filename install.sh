@@ -44,15 +44,28 @@ TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=full --no-interaction
 cd ..
 rm -rf install-tl-* install-tl-unx.tar.gz
 
-# Create symlinks for all binaries
-ln -s /usr/local/texlive/*/bin/* /usr/local/bin/
+# Create symlinks for all binaries (with improved path handling)
+TEXLIVE_BIN_PATH=$(find /usr/local/texlive -name "bin" -type d | grep "bin/x86_64-linux\|bin/aarch64-linux" | head -n 1)
+if [ -n "$TEXLIVE_BIN_PATH" ]; then
+    for binary in $(ls $TEXLIVE_BIN_PATH); do
+        ln -sf $TEXLIVE_BIN_PATH/$binary /usr/local/bin/$binary
+    done
+else
+    echo "Error: Could not find TeX Live binaries directory"
+    exit 1
+fi
 
-# Verify installation
-pdflatex --version
-latexmk --version
+# Update PATH for current session
+export PATH="/usr/local/bin:$PATH"
 
 # Install LaTeX tools for VSCodium
 apk add latexmk chktex
+
+# Verify installation
+which pdflatex
+which latexmk
+pdflatex --version
+latexmk --version
 
 # Install GitHub Desktop via Flatpak
 apk add flatpak
@@ -62,6 +75,7 @@ flatpak install flathub io.github.shiftey.Desktop -y
 # Make UTF-8 locale persistent
 echo "export LANG=en_US.UTF-8" >> /etc/profile
 echo "export LC_ALL=en_US.UTF-8" >> /etc/profile
+echo 'export PATH="/usr/local/bin:$PATH"' >> /etc/profile
 
 # Reboot
 reboot
