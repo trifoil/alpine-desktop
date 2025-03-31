@@ -30,32 +30,23 @@ apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music 
       gnome-calendar yelp simple-scan xsane totem snapshot
 
 # Install LaTeX (Full)
-apk add build-base perl wget tar
+apk add build-base perl wget tar gnupg
 wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xzf install-tl-unx.tar.gz
 cd install-tl-*
-./install-tl --scheme=full
+TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=full --no-interaction
 cd ..
 rm -rf install-tl-* install-tl-unx.tar.gz
 
-# Add LaTeX to PATH
-echo 'export PATH=/usr/local/texlive/2024/bin/x86_64-linux:$PATH' >> /etc/profile
-source /etc/profile
+# Create symlinks for all binaries
+ln -s /usr/local/texlive/*/bin/* /usr/local/bin/
 
-# Install Texmaker dependencies
-apk add qt5-qtbase-dev qt5-qttools-dev poppler-qt5-dev make g++
-export QT_SELECT=5
-export PATH="/usr/lib/qt5/bin:$PATH"
+# Verify installation
+pdflatex --version
+latexmk --version
 
-# Download and compile Texmaker from source
-wget https://www.xm1math.net/texmaker/texmaker-5.1.4.tar.bz2
-tar -xf texmaker-5.1.4.tar.bz2
-cd texmaker-5.1.4
-qmake-qt5 PREFIX=/usr
-make
-make install
-cd ..
-rm -rf texmaker-5.1.4*
+# Install LaTeX tools for VSCodium
+apk add latexmk chktex
 
 # Reboot
 reboot
