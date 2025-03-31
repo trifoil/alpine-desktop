@@ -1,47 +1,59 @@
 #!/bin/bash
 
 # Enable strict mode:
-# -e  Exit immediately if a command exits with a non-zero status
-# -x  Print commands and their arguments as they are executed
 set -ex
 
-# Check if the script is running as root (user ID 0)
+# Check if the script is running as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Try 'sudo sh install.sh'"
-    exit 1  # Exit with error code 1 if not root
+    exit 1
 fi
 
-# Add Alpine Linux's edge/testing repository to the package manager's sources
+# Add Alpine's edge/testing repo
 echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 
-# Update the package index and upgrade all installed packages
+# Update & upgrade
 apk update && apk upgrade
 
-# Install GNOME desktop environment using Alpine's setup-desktop utility
+# Install GNOME
 setup-desktop gnome
 
-# Install various packages:
-apk add vscodium  # VS Code editor (open-source version)
-apk add btop      # Advanced system monitor
-apk add curl nano fastfetch  # curl for downloads, nano text editor, fastfetch system info tool
+# Install essential tools
+apk add vscodium btop curl nano fastfetch
 
-# Install Rust programming language using rustup installer
+# Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-apk add cargo     # Rust package manager (also installed by rustup)
+apk add cargo
 
-# Remove unnecessary GNOME applications to streamline the installation:
-apk del gnome-weather
-apk del gnome-clocks
-apk del gnome-contacts
-apk del cheese       # Webcam application
-apk del gnome-tour
-apk del gnome-music
-apk del gnome-calendar
-apk del yelp         # Help browser
-apk del simple-scan  # Scanning utility
-apk del xsane        # Scanning utility (alternative)
-apk del totem        # Video player
-apk del snapshot     # Screenshot tool
+# Remove unnecessary GNOME apps
+apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
+      gnome-calendar yelp simple-scan xsane totem snapshot
 
-# Reboot the system to apply all changes
+# Install LaTeX (Full)
+apk add build-base perl wget tar
+wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+tar -xzf install-tl-unx.tar.gz
+cd install-tl-*
+./install-tl --scheme=full
+cd ..
+rm -rf install-tl-* install-tl-unx.tar.gz
+
+# Add LaTeX to PATH
+echo 'export PATH=/usr/local/texlive/2024/bin/x86_64-linux:$PATH' >> /etc/profile
+source /etc/profile
+
+# Install Texmaker dependencies
+apk add qt5-qtbase qt5-qttools poppler-qt5
+
+# Download and compile Texmaker from source
+wget https://www.xm1math.net/texmaker/texmaker-5.1.4.tar.bz2
+tar -xf texmaker-5.1.4.tar.bz2
+cd texmaker-5.1.4
+qmake-qt5 PREFIX=/usr
+make
+make install
+cd ..
+rm -rf texmaker-5.1.4*
+
+# Reboot
 reboot
