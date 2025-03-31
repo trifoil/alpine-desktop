@@ -19,5 +19,5 @@ apk add vscodium
 apk add curl nano fastfetch
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
-
+apk del gnome-weather
 #reboot
