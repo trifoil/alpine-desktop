@@ -63,7 +63,7 @@ apk update && apk upgrade
 # Install Xorg and complete GNOME
 echo "Installing Xorg and GNOME..."
 setup-xorg-base
-apk add gnome gnome-apps-core gnome-apps-extra
+apk add gnome gnome-apps-core
 
 # Install additional required packages
 echo "Installing additional packages..."
