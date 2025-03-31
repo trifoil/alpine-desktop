@@ -10,18 +10,4 @@ echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/
 setup-desktop gnome
 
 # Remove useless stuff
-apk del gnome-weather 
-
-# Remove specified GNOME tools
-apk del \
-    gnome-calendar \
-    gnome-music \
-    gnome-camera \
-    gnome-tour \
-    gnome-videos \
-    gnome-user-docs \
-    gnome-documents \
-    simple-scan
-
-# Optional: Clean up dependencies
-apk autoremove
+apk del gnome-weather gnome-calendar gnome-music gnome-camera gnome-tour gnome-videos gnome-user-docs gnome-documents simple-scan

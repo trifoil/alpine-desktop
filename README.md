@@ -45,4 +45,6 @@
 ### **3. Tips**
 1. **Super user**
    - Use ```doas``` instead of ```sudo```
-   
+
+2. **Cleaning**
+   - Removing a package will automatically remove all of its dependencies that are otherwise not used
