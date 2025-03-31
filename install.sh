@@ -5,7 +5,7 @@ set -ex
 
 # Check if running as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root. Try 'doas sh install.sh'"
+    echo "This script must be run as root. Try 'sudo sh install.sh'"
     exit 1
 fi
 
@@ -38,31 +38,12 @@ apk add gnome gnome-apps-core
 
 # Install additional required packages
 echo "Installing additional packages..."
-apk add bash bash-completion curl gcc musl-dev doas
-
-# Configure doas if not already configured
-if [ ! -f /etc/doas.conf ]; then
-    echo "permit persist keepenv :wheel" > /etc/doas.conf
-    chmod 0400 /etc/doas.conf
-fi
+apk add bash bash-completion
 
 # Create user if not exists
 if ! id -u x >/dev/null 2>&1; then
     echo "Creating user 'x'..."
-    adduser -D -h /home/x x -G wheel
-fi
-
-# Install Rust via rustup as the target user
-echo "Installing Rust..."
-if ! runuser -u x -- command -v rustup &> /dev/null; then
-    # Download and run rustup installer as the target user
-    runuser -u x -- curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | runuser -u x -- sh -s -- -y
-    
-    # Add cargo to user's PATH
-    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> /home/x/.bashrc
-    
-    # Install basic components
-    runuser -u x -- sh -c '. /home/x/.cargo/env && rustup component add rust-src rust-docs'
+    adduser -D -h /home/x x
 fi
 
 # Enable GDM
@@ -73,7 +54,6 @@ rc-update add gdm default
 echo "Performing final updates..."
 apk update && apk upgrade
 
-echo "Installation complete!"
-echo "Rust and cargo have been installed for user 'x'"
+echo "GNOME installation complete!"
 echo "You can start the graphical environment by running:"
 echo "rc-service gdm start"
