@@ -11,7 +11,7 @@ fi
 if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing' /etc/apk/repositories; then
     echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing" >> /etc/apk/repositories
 fi
-
+apk update && apk upgrade
 # Update repositories
 apk update
 
