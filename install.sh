@@ -1,111 +1,88 @@
 #!/bin/bash
 
-STATE_FILE="/tmp/script_state.txt"
-LOG_FILE="/tmp/script_log.txt"
+# Exit on error and print commands
+set -e
 
-# Function to update the state file
-update_state() {
-    echo "$1" > "$STATE_FILE"
-}
-
-# Function to get the current state
-get_state() {
-    if [ -f "$STATE_FILE" ]; then
-        cat "$STATE_FILE"
-    else
-        echo "START"
-    fi
-}
-
-# Function to log messages
-log_message() {
-    echo "$(date): $1" | tee -a "$LOG_FILE"
-}
-
-# Initial state
-STATE=$(get_state)
-
-# Checkpoint 1: Update and upgrade system
-if [ "$STATE" == "START" ]; then
-    log_message "Updating and upgrading system..."
-    apk update && apk upgrade
-    update_state "CHECKPOINT_1"
-    log_message "Rebooting..."
-    reboot
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Try 'sudo sh install.sh'"
+    exit 1
 fi
 
-# Checkpoint 2: Add repositories
-if [ "$STATE" == "CHECKPOINT_1" ]; then
-    log_message "Adding repositories..."
-    if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/main' /etc/apk/repositories; then
-        echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-    fi
-    if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/community' /etc/apk/repositories; then
-        echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-    fi
-    if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/testing' /etc/apk/repositories; then
-        echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-    fi
-    update_state "CHECKPOINT_2"
-    log_message "Rebooting..."
-    reboot
+# Create post-reboot cleanup script
+cat > /etc/post-install-cleanup.sh << 'EOL'
+#!/bin/bash
+
+# Remove unwanted GNOME applications
+apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
+
+# Remove script itself and cleanup
+rm -f /etc/post-install-cleanup.sh
+rm -f /etc/local.d/post-install-cleanup.start
+
+# Enable all services
+rc-update add gdm default
+rc-service gdm start
+
+echo "Unwanted applications removed successfully!"
+EOL
+
+# Make the cleanup script executable
+chmod +x /etc/post-install-cleanup.sh
+
+# Create autostart entry for the cleanup script
+cat > /etc/local.d/post-install-cleanup.start << 'EOL'
+#!/bin/sh
+/etc/post-install-cleanup.sh
+EOL
+
+chmod +x /etc/local.d/post-install-cleanup.start
+
+# Update and upgrade system
+echo "Updating system packages..."
+apk update && apk upgrade
+
+# Configure repositories
+echo "Configuring repositories..."
+if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/main' /etc/apk/repositories; then
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
 fi
 
-# Checkpoint 3: Install Xorg and GNOME
-if [ "$STATE" == "CHECKPOINT_2" ]; then
-    log_message "Installing Xorg and GNOME..."
-    setup-xorg-base
-    apk add gnome gnome-apps-core gnome-apps-extra
-    update_state "CHECKPOINT_3"
-    log_message "Rebooting..."
-    reboot
+if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/community' /etc/apk/repositories; then
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
 fi
 
-# Checkpoint 4: Remove unwanted GNOME applications
-if [ "$STATE" == "CHECKPOINT_3" ]; then
-    log_message "Removing unwanted GNOME applications..."
-    apk del gnome-calendar gnome-music gnome-camera gnome-tour gnome-videos gnome-help gnome-document-scanner
-    update_state "CHECKPOINT_4"
-    log_message "Rebooting..."
-    reboot
+if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/edge/testing' /etc/apk/repositories; then
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 fi
 
-# Checkpoint 5: Start GDM and enable it to start on boot
-if [ "$STATE" == "CHECKPOINT_4" ]; then
-    log_message "Starting GDM and enabling it to start on boot..."
-    rc-service gdm start
-    rc-update add gdm
-    update_state "CHECKPOINT_5"
-    log_message "Rebooting..."
-    reboot
+# Update package lists
+echo "Updating package lists..."
+apk update && apk upgrade
+
+# Install Xorg and complete GNOME
+echo "Installing Xorg and GNOME..."
+setup-xorg-base
+apk add gnome gnome-apps-core gnome-apps-extra
+
+# Install additional required packages
+echo "Installing additional packages..."
+apk add bash bash-completion
+
+# Create user if not exists
+if ! id -u x >/dev/null 2>&1; then
+    echo "Creating user 'x'..."
+    adduser -D -h /home/x x
 fi
 
-# Checkpoint 6: Install additional tools
-if [ "$STATE" == "CHECKPOINT_5" ]; then
-    log_message "Installing additional tools..."
-    apk add bash bash-completion thunar-volman
-    update_state "CHECKPOINT_6"
-    log_message "Rebooting..."
-    reboot
-fi
+# Enable services (but don't start gdm yet to prevent desktop loading before cleanup)
+rc-update add gdm
+rc-update add local default
 
-# Checkpoint 7: Add a new user
-if [ "$STATE" == "CHECKPOINT_6" ]; then
-    log_message "Adding a new user..."
-    adduser x -h /home/x
-    update_state "CHECKPOINT_7"
-    log_message "Rebooting..."
-    reboot
-fi
+# Final system update
+echo "Performing final updates..."
+apk update && apk upgrade
 
-# Final state: Clean up
-if [ "$STATE" == "CHECKPOINT_7" ]; then
-    log_message "Cleaning up..."
-    rm -f "$STATE_FILE"
-    log_message "Script completed successfully."
-fi
-
-# Display the log file contents
-if [ -f "$LOG_FILE" ]; then
-    cat "$LOG_FILE"
-fi
+echo "Installation complete! The system will now reboot..."
+echo "After reboot, the unwanted applications will be automatically removed."
+reboot
