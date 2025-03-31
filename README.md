@@ -1,64 +1,68 @@
-# Alpine Desktop 
+#!/bin/bash
 
-### **1. Boot and Install Alpine**
-1. **Boot from USB** (select "Alpine Extended" if prompted).
-2. **Login** as `root` (no password by default).
-3. **Run setup**:
-   ```bash
-   setup-alpine
-   ```
-4. **Follow the prompts**:
-   - Keyboard layout (`us`, `uk`, etc.)
-   - Hostname (e.g., `alpine-desktop`)
-   - Network interface (e.g., `eth0`)
-   - IP address (DHCP or manual)
-   - Timezone (e.g., `UTC` or `Europe/London`)
-   - Proxy (leave blank if not needed)
-   - Mirror (pick a nearby one)
-   - SSH server (enable if needed)
-   - Disk partitioning:
-     - **Recommended**: `sys` (entire disk, ext4)
-     - Advanced users: Manual (`manual`) for custom partitions.
-   - Set root password.
-   - Install to disk (`y`).
+# Enable strict mode:
+set -ex
 
-5. **Reboot**:
-   ```bash
-   reboot
-   ```
-   (Remove the USB when prompted.)
+# Check if the script is running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root. Try 'sudo sh install.sh'"
+    exit 1
+fi
 
----
+# Add Alpine's edge/testing repo
+echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 
-### **2. Post-Installation Setup**
-1. **Login** as `root`.
+# Update & upgrade
+apk update && apk upgrade
 
-2. **Run the post install script**:
-   ```bash
-   git clone https://github.com/trifoil/alpine-desktop
-   cd alpine-desktop
-   sh install.sh
-   cd ..
-   rm -rf alpine-desktop
-   ```
+# Fix UTF-8 locale for btop (Alpine-specific method)
+apk add musl-locales musl-locales-lang
+setup-locales LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
-### **3. Tips**
-1. **Super user**
-   - Use ```doas``` instead of ```sudo```
+# Install GNOME
+setup-desktop gnome
 
-2. **Cleaning**
-   - Removing a package will automatically remove all of its dependencies that are otherwise not used
+# Install essential tools (now including btop)
+apk add vscodium btop curl nano fastfetch
 
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+apk add cargo
 
+# Remove unnecessary GNOME apps
+apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
+      gnome-calendar yelp simple-scan xsane totem snapshot
 
-
-
-```
-apk add build-base perl wget tar
+# Install LaTeX (Full)
+apk add build-base perl wget tar gnupg
 wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xzf install-tl-unx.tar.gz
 cd install-tl-*
-./install-tl --scheme=full
-```
+TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=full --no-interaction
+cd ..
+rm -rf install-tl-* install-tl-unx.tar.gz
 
+# Create symlinks for all binaries
+ln -s /usr/local/texlive/*/bin/* /usr/local/bin/
 
+# Verify installation
+pdflatex --version
+latexmk --version
+
+# Install LaTeX tools for VSCodium
+apk add latexmk chktex
+
+# Install GitHub Desktop via Flatpak
+apk add flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub io.github.shiftey.Desktop -y
+
+# Make UTF-8 locale persistent
+echo "export LANG=en_US.UTF-8" >> /etc/profile.d/locale.sh
+echo "export LC_ALL=en_US.UTF-8" >> /etc/profile.d/locale.sh
+chmod +x /etc/profile.d/locale.sh
+
+# Reboot
+reboot
