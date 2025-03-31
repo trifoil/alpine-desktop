@@ -41,3 +41,8 @@
    cd ..
    rm -rf alpine-desktop
    ```
+
+### **3. Tips**
+1. **Super user**
+   - Use ```doas``` instead of ```sudo```
+   
