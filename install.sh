@@ -3,14 +3,21 @@
 # Update and upgrade system
 apk update && apk upgrade
 
-# Add community repository if not already added
+# Add community and testing repositories if not already added
 if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' /etc/apk/repositories; then
     echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 fi
 
+if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing' /etc/apk/repositories; then
+    echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/testing" >> /etc/apk/repositories
+fi
+
+# Update repositories
+apk update
+
 # Install Xorg and GNOME
-apk add setup-xorg-base
-apk add gnome gnome-apps-core gnome-apps-extra
+apk add xorg-server xf86-video-vesa xf86-input-libinput
+apk add gnome gnome-apps-core
 
 # Install necessary dependencies
 apk add dbus elogind polkit bash bash-completion thunar-volman
