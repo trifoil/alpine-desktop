@@ -15,10 +15,9 @@ echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositori
 # Update & upgrade
 apk update && apk upgrade
 
-# Fix UTF-8 locale for btop
-apk add lang
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen
+# Fix UTF-8 locale for btop (Alpine-specific method)
+apk add musl-locales musl-locales-lang
+setup-locales LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
@@ -59,6 +58,11 @@ apk add latexmk chktex
 apk add flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install flathub io.github.shiftey.Desktop -y
+
+# Make UTF-8 locale persistent
+echo "export LANG=en_US.UTF-8" >> /etc/profile.d/locale.sh
+echo "export LC_ALL=en_US.UTF-8" >> /etc/profile.d/locale.sh
+chmod +x /etc/profile.d/locale.sh
 
 # Reboot
 reboot
