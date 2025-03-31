@@ -33,7 +33,7 @@ chmod +x /etc/post-install-cleanup.sh
 # Create autostart entry for the cleanup script
 cat > /etc/local.d/post-install-cleanup.start << 'EOL'
 #!/bin/sh
-/etc/post-install-cleanup.sh
+/etc/post-install-cleanup.sh && rc-service local stop
 EOL
 
 chmod +x /etc/local.d/post-install-cleanup.start
@@ -63,11 +63,11 @@ apk update && apk upgrade
 # Install Xorg and complete GNOME
 echo "Installing Xorg and GNOME..."
 setup-xorg-base
-apk add gnome gnome-apps-core gnome-apps-extra
+apk add gnome gnome-apps-core 
 
 # Install additional required packages
 echo "Installing additional packages..."
-apk add bash bash-completion thunar-volman
+apk add bash bash-completion 
 
 # Create user if not exists
 if ! id -u x >/dev/null 2>&1; then
