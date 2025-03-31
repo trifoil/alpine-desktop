@@ -27,8 +27,11 @@ setup-desktop gnome
 # Install essential tools (now including btop)
 apk add vscodium btop curl nano fastfetch
 
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Install Rust (press Enter automatically)
+printf '\n' | sh -s -- --help | grep -q rustup && {
+    printf '\n' | curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+}
+source "$HOME/.cargo/env"
 apk add cargo
 
 # Remove unnecessary GNOME apps
