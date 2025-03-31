@@ -9,6 +9,15 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+
+apk update && apk upgrade
+
 setup-desktop gnome
 
-reboot
+apk add vscodium
+apk add curl nano fastfetch
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+apk add cargo
+
+#reboot

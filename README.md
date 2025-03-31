@@ -56,3 +56,7 @@
 ```
 apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
 ```
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
