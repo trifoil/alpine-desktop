@@ -48,3 +48,11 @@
 
 2. **Cleaning**
    - Removing a package will automatically remove all of its dependencies that are otherwise not used
+
+
+
+
+
+```
+apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
+```
