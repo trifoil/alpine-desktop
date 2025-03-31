@@ -20,4 +20,15 @@ apk add curl nano fastfetch
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
 apk del gnome-weather
+apk del gnome-clocks
+apk del gnome-contacts
+apk del cheese  # GNOME Camera is usually packaged as 'cheese' in Alpine
+apk del gnome-tour
+apk del gnome-music
+apk del gnome-calendar
+apk del simple-scan  # For the GNOME scanner application
+apk del xsane  # Alternative scanner application
+
+
+
 #reboot
