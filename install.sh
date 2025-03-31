@@ -8,21 +8,21 @@ if ! grep -q '^http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' /et
     echo "http://dl-cdn.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 fi
 
-# Prompt to create a new user (skip if already exists)
+# Prompt to create a new user for GNOME
 read -p "Do you want to create a new user for GNOME? (y/n): " create_user
 if [[ $create_user =~ ^[Yy]$ ]]; then
     read -p "Enter username: " username
     if id "$username" &>/dev/null; then
         echo "User $username already exists. Skipping creation."
     else
-        # Create user with a home directory and add to necessary groups
+        # Create user with home dir and add to required groups
         adduser -D "$username" -G wheel,audio,video,netdev
         passwd "$username"  # Prompt to set password
         echo "User $username created successfully."
     fi
 fi
 
-# Install only the core GNOME components (no meta-package)
+# Install core GNOME components (no meta-package)
 apk add --no-cache \
     gdm \
     gnome-shell \
@@ -40,15 +40,28 @@ apk add --no-cache \
     gnome-tweaks \
     gnome-software
 
-# Optional: Install additional useful apps (customize as needed)
-apk add --no-cache \
-    eog \
-    evince \
-    file-roller \
-    gedit \
-    seahorse
+# Install required background services
+apk add --no-cache dbus elogind polkit
+rc-update add dbus
+rc-update add elogind
+rc-service dbus start
+rc-service elogind start
 
-# Explicitly block unwanted apps to prevent future installation
+# Create GDM OpenRC service if missing
+if [ ! -f /etc/init.d/gdm ]; then
+    cat <<EOF > /etc/init.d/gdm
+#!/sbin/openrc-run
+command="/usr/bin/gdm"
+command_background=true
+pidfile="/run/gdm.pid"
+depend() {
+    need dbus elogind
+}
+EOF
+    chmod +x /etc/init.d/gdm
+fi
+
+# Block unwanted apps
 apk add --no-cache --virtual .unwanted-gnome-apps \
     gnome-weather \
     gnome-calendar \
@@ -60,8 +73,10 @@ apk add --no-cache --virtual .unwanted-gnome-apps \
     gnome-documents \
     simple-scan
 
-# Enable GDM (GNOME Display Manager) on boot
+# Enable and start GDM
 rc-update add gdm default
+rc-service gdm start
 
-echo "GNOME installed successfully without unwanted apps. Rebooting..."
+echo "GNOME installed successfully. Rebooting in 5 seconds..."
+sleep 5
 reboot
