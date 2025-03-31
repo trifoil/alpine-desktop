@@ -54,9 +54,11 @@
 
 
 ```
-apk del gnome-calendar gnome-music cheese gnome-tour totem yelp simple-scan
+apk add build-base perl wget tar
+wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+tar -xzf install-tl-unx.tar.gz
+cd install-tl-*
+./install-tl --scheme=full
 ```
 
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+
