@@ -47,19 +47,28 @@ rc-update add elogind
 rc-service dbus start
 rc-service elogind start
 
-# Create GDM OpenRC service if missing
-if [ ! -f /etc/init.d/gdm ]; then
-    cat <<EOF > /etc/init.d/gdm
+# Verify GDM binary exists (critical fix)
+if [ ! -f /usr/bin/gdm ]; then
+    echo "ERROR: GDM binary not found! Reinstalling..."
+    apk fix gdm
+    apk add --force-overwrite gdm
+fi
+
+# Create proper GDM OpenRC service (updated version)
+cat <<EOF > /etc/init.d/gdm
 #!/sbin/openrc-run
+name="GDM"
+description="GNOME Display Manager"
 command="/usr/bin/gdm"
-command_background=true
+command_args="--nodaemon"
 pidfile="/run/gdm.pid"
 depend() {
     need dbus elogind
+    after bootmisc
 }
 EOF
-    chmod +x /etc/init.d/gdm
-fi
+
+chmod +x /etc/init.d/gdm
 
 # Block unwanted apps
 apk add --no-cache --virtual .unwanted-gnome-apps \
@@ -77,6 +86,6 @@ apk add --no-cache --virtual .unwanted-gnome-apps \
 rc-update add gdm default
 rc-service gdm start
 
-echo "GNOME installed successfully. Rebooting in 5 seconds..."
+echo "GNOME installation complete. Rebooting in 5 seconds..."
 sleep 5
 reboot
