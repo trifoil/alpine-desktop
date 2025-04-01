@@ -28,6 +28,9 @@ apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
 
+read -n 1 -s -r -p "Done. Press any key to continue..."
+
+
 # Install LaTeX (Full) - with proper dependencies
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
 
