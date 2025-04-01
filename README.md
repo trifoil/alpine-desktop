@@ -54,7 +54,7 @@
 
 
 ```
-# Check for virtualization support and install virt-manager
+# Virtualization setup
 echo "Checking virtualization support..."
 if [ -z "$(grep -E 'vmx|svm' /proc/cpuinfo)" ]; then
     echo "WARNING: Virtualization extensions not found in /proc/cpuinfo"
@@ -63,15 +63,27 @@ else
     echo "Virtualization support detected in CPU"
 fi
 
-# Install virt-manager and related packages
-echo "Installing virt-manager and virtualization tools..."
-apk add virt-manager libvirt qemu qemu-img qemu-system-x86_64 ebtables dnsmasq bridge-utils iptables
+# Install virt-manager and dependencies (using exact package names from your output)
+echo "Installing virtualization packages..."
+apk add libvirt \
+    libvirt-daemon \
+    libvirt-client \
+    libvirt-libs \
+    virt-manager \
+    qemu \
+    qemu-img \
+    qemu-system-x86_64 \
+    ebtables \
+    dnsmasq \
+    bridge-utils \
+    iptables \
+    libvirt-bash-completion
 
-# Start and enable libvirt service (Alpine-specific commands)
+# Start and enable libvirt
 rc-service libvirt start
 rc-update add libvirt
 
-# Add user to libvirt group (assuming the main user is the one who installed the system)
+# Add user to libvirt group
 MAIN_USER=$(ls /home | head -n 1)
 if [ -n "$MAIN_USER" ]; then
     adduser $MAIN_USER libvirt
@@ -88,7 +100,15 @@ else
     echo "You might need to load kernel modules with:"
     echo "modprobe kvm"
     echo "modprobe kvm_intel (or kvm_amd depending on your CPU)"
+    echo "Then restart libvirt: rc-service libvirt restart"
 fi
+
+# Make UTF-8 locale persistent
+echo "export LANG=en_US.UTF-8" >> /etc/profile
+echo "export LC_ALL=en_US.UTF-8" >> /etc/profile
+
+# Reboot
+reboot
 ```
 
 
