@@ -5,23 +5,22 @@ show_menu() {
     clear
     echo "Available scripts:"
     
-    # Find and sort all .sh files with numeric prefixes
-    local scripts=()
-    for file in [0-9]*_*.sh; do
-        [[ -f "$file" ]] || continue  # Ensure it's a regular file
-        scripts+=("$file")
+    # Find all .sh files with numeric prefixes
+    scripts=()
+    for file in *.sh; do
+        if [[ "$file" =~ ^[0-9]+_ ]]; then
+            scripts+=("$file")
+        fi
     done
     
     # Sort scripts by their numeric prefix
-    IFS=$'\n' scripts=($(sort -n <<< "${scripts[*]}"))
+    IFS=$'\n' sorted=($(sort -n <<< "${scripts[*]}"))
     unset IFS
     
     # Display the menu
-    for i in "${!scripts[@]}"; do
-        filename="${scripts[$i]}"
-        # Extract the number and name parts
-        num=$(echo "$filename" | sed -E 's/^([0-9]+)_.*\.sh$/\1/')
-        name=$(echo "$filename" | sed -E 's/^[0-9]+_(.*)\.sh$/\1/')
+    for script in "${sorted[@]}"; do
+        num=$(echo "$script" | sed 's/^\([0-9]\+\).*/\1/')
+        name=$(echo "$script" | sed 's/^[0-9]\+_\(.*\)\.sh$/\1/')
         echo "$num) $name"
     done
     
@@ -36,7 +35,7 @@ while true; do
     read -p "Enter your choice: " choice
     
     # Check if user wants to quit
-    if [[ "$choice" == "q" ]]; then
+    if [ "$choice" = "q" ]; then
         echo "Exiting..."
         exit 0
     fi
@@ -50,19 +49,18 @@ while true; do
     
     # Find the corresponding script
     found=0
-    for script in [0-9]*_*.sh; do
-        num=$(echo "$script" | sed -E 's/^([0-9]+)_.*\.sh$/\1/')
-        if [[ "$num" == "$choice" ]]; then
+    for script in *.sh; do
+        if [[ "$script" =~ ^$choice ]]; then
             found=1
             echo "Executing $script..."
-            chmod +x "$script" 2>/dev/null  # Make executable if not already
+            chmod +x "$script" 2>/dev/null
             ./"$script"
             read -p "Press [Enter] to continue..."
             break
         fi
     done
     
-    if [[ "$found" -eq 0 ]]; then
+    if [ "$found" -eq 0 ]; then
         echo "No script found with number $choice"
         read -p "Press [Enter] to continue..."
     fi
