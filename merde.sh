@@ -21,9 +21,7 @@ apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
 read -n 1 -s -r -p "dep. Press any key to continue..."
 # Install TeX Live
-wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://mirror.ctan.net/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://mirror.ctan.org/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
+
 wget https://ctan.mines-albi.fr/systems/texlive/tlnet/install-tl-unx.tar.gz
 wget https://za.mirrors.cicku.me/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
 
