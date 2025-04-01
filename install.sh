@@ -28,23 +28,6 @@ apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
 
-# Remove unnecessary GNOME apps
-apk del gnome-weather
-apk del gnome-clocks
-apk del gnome-contacts
-apk del cheese
-apk del gnome-tour
-apk del gnome-music
-apk del gnome-calendar
-apk del yelp
-apk del simple-scan
-apk del xsane
-apk del totem
-apk del snapshot
-apk del gnome-software
-apk del firefox
-apk del epiphany
-
 # Install LaTeX (Full) - with proper dependencies
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
 
@@ -73,39 +56,6 @@ apk add texstudio
 
 
 
-
-
-
-
-# Install GitHub Desktop via Flatpak with robust error handling
-echo "Installing GitHub Desktop via Flatpak..."
-apk add flatpak
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-# Clean up any existing installation
-if flatpak list | grep -q io.github.shiftey.Desktop; then
-    flatpak remove -y --noninteractive io.github.shiftey.Desktop
-    flatpak uninstall -y --unused
-fi
-
-# Install with automatic branch selection
-if ! flatpak install -y flathub io.github.shiftey.Desktop; then
-    echo "Falling back to stable branch..."
-    flatpak install -y flathub io.github.shiftey.Desktop//stable
-fi
-
-# Verify and fix installation
-{
-    flatpak list | grep -q io.github.shiftey.Desktop && \
-    update-desktop-database /var/lib/flatpak/exports/share/applications && \
-    echo "GitHub Desktop installed successfully"
-} || {
-    echo "Installation may need manual intervention. After reboot run:"
-    echo "flatpak install flathub io.github.shiftey.Desktop"
-}
-
-# Ensure desktop files are accessible
-find /var/lib/flatpak/exports/share/applications -name "*.desktop" -exec chmod 644 {} \;
 
 
 read -n 1 -s -r -p "Done. Press any key to continue..."
@@ -166,6 +116,23 @@ else
     echo "modprobe kvm_intel (or kvm_amd depending on your CPU)"
     echo "Then restart libvirt: rc-service libvirtd restart"
 fi
+
+# Remove unnecessary GNOME apps
+apk del gnome-weather
+apk del gnome-clocks
+apk del gnome-contacts
+apk del cheese
+apk del gnome-tour
+apk del gnome-music
+apk del gnome-calendar
+apk del yelp
+apk del simple-scan
+apk del xsane
+apk del totem
+apk del snapshot
+apk del gnome-software
+apk del firefox
+apk del epiphany
 
 # Reboot
 reboot
