@@ -95,7 +95,7 @@ fi
 find /var/lib/flatpak/exports/share/applications -name "*.desktop" -exec chmod 644 {} \;
 
 
-
+read -n 1 -s -r -p "Done. Press any key to continue..."
 
 
 
