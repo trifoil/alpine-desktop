@@ -48,4 +48,3 @@
 
 2. **Cleaning**
    - Removing a package will automatically remove all of its dependencies that are otherwise not used
-
