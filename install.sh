@@ -36,6 +36,12 @@ apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
 
 # Install TeX Live
 wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+wget https://mirror.ctan.net/systems/texlive/tlnet/install-tl-unx.tar.gz
+wget https://mirror.ctan.org/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
+wget https://ctan.mines-albi.fr/systems/texlive/tlnet/install-tl-unx.tar.gz
+wget https://za.mirrors.cicku.me/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
+
+ 
 tar -xzf install-tl-unx.tar.gz
 cd install-tl-*
 
