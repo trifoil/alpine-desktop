@@ -22,7 +22,13 @@ export LC_ALL=en_US.UTF-8
 setup-desktop gnome
 
 # Install essential tools (now including btop)
-apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion 
+apk add vscodium 
+apk add btop 
+apk add curl 
+apk add nano 
+apk add fastfetch 
+apk add librewolf 
+apk add bash-completion 
 
 read -p "Press [Enter] to continue..."
 
