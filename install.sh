@@ -22,7 +22,7 @@ export LC_ALL=en_US.UTF-8
 setup-desktop gnome
 
 # Install essential tools (now including btop)
-apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion jellyfin
+apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion 
 
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
