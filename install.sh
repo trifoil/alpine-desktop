@@ -51,7 +51,7 @@ rm -rf install-tl-* install-tl-unx.tar.gz
 # Add TeX Live to PATH
 echo 'export PATH="/usr/local/2025/bin/x86_64-linuxmusl:$PATH"' >> /etc/profile
 
-apk add texmaker
+apk add texstudio
 
 # Install GitHub Desktop via Flatpak
 apk add flatpak

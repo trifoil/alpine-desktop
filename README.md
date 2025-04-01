@@ -54,13 +54,38 @@
 
 
 ```
-apk add qt5-qtbase qt5-qttools poppler-qt5
-wget https://www.xm1math.net/texmaker/texmaker-5.1.4.tar.gz
-tar -xzf texmaker-5.1.4.tar.gz
-cd texmaker-5.1.4
-qmake-qt5
-make
-make install
+# Check for virtualization support and install virt-manager
+echo "Checking virtualization support..."
+if [ -z "$(grep -E 'vmx|svm' /proc/cpuinfo)" ]; then
+    echo "WARNING: Virtualization extensions not found in /proc/cpuinfo"
+    echo "You may need to enable virtualization in your BIOS/UEFI settings"
+else
+    echo "Virtualization support detected in CPU"
+fi
+
+# Install virt-manager and related packages
+echo "Installing virt-manager and virtualization tools..."
+apk add virt-manager libvirt qemu qemu-img qemu-system-x86_64 ebtables dnsmasq bridge-utils
+
+# Start and enable libvirt service
+rc-update add libvirtd
+service libvirtd start
+
+# Add user to libvirt group (assuming the main user is the one who installed the system)
+MAIN_USER=$(ls /home | head -n 1)
+if [ -n "$MAIN_USER" ]; then
+    adduser $MAIN_USER libvirt
+    echo "Added user $MAIN_USER to libvirt group"
+else
+    echo "No regular user found in /home directory"
+fi
+
+# Verify installation
+if virsh list --all &>/dev/null; then
+    echo "libvirt is working correctly"
+else
+    echo "libvirt installation may have issues - check journalctl for errors"
+fi
 ```
 
 
