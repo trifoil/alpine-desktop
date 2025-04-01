@@ -24,6 +24,8 @@ setup-desktop gnome
 # Install essential tools (now including btop)
 apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion 
 
+read -p "Press [Enter] to continue..."
+
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
@@ -90,6 +92,8 @@ apk del snapshot
 apk del gnome-software
 apk del firefox
 apk del epiphany
+
+read -p "Press [Enter] to continue..."
 
 # Reboot
 reboot
