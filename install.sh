@@ -22,7 +22,7 @@ export LC_ALL=en_US.UTF-8
 setup-desktop gnome
 
 # Install essential tools (now including btop)
-apk add vscodium btop curl nano fastfetch librewolf
+apk add vscodium btop curl nano fastfetch librewolf gnome-abrt
 
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -30,7 +30,7 @@ apk add cargo
 
 # Remove unnecessary GNOME apps
 apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
-      gnome-calendar yelp simple-scan xsane totem snapshot gnome-software firefox
+      gnome-calendar yelp simple-scan xsane totem snapshot gnome-software firefox WebKitWebProcess
 
 # Install LaTeX (Full) - with proper dependencies
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev

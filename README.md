@@ -54,11 +54,13 @@
 
 
 ```
-apk add build-base perl wget tar
-wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
-tar -xzf install-tl-unx.tar.gz
-cd install-tl-*
-./install-tl --scheme=full
+apk add qt5-qtbase qt5-qttools poppler-qt5
+wget https://www.xm1math.net/texmaker/texmaker-5.1.4.tar.gz
+tar -xzf texmaker-5.1.4.tar.gz
+cd texmaker-5.1.4
+qmake-qt5
+make
+make install
 ```
 
 
