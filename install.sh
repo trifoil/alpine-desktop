@@ -22,7 +22,7 @@ export LC_ALL=en_US.UTF-8
 setup-desktop gnome
 
 # Install essential tools (now including btop)
-apk add vscodium btop curl nano fastfetch
+apk add vscodium btop curl nano fastfetch librewolf
 
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -30,7 +30,7 @@ apk add cargo
 
 # Remove unnecessary GNOME apps
 apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
-      gnome-calendar yelp simple-scan xsane totem snapshot
+      gnome-calendar yelp simple-scan xsane totem snapshot gnome-software firefox
 
 # Install LaTeX (Full) - with proper dependencies
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
@@ -48,34 +48,10 @@ TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl \
 cd ..
 rm -rf install-tl-* install-tl-unx.tar.gz
 
-# Find the TeX Live binaries directory (looking for versioned directory)
-TEXLIVE_BIN_PATH=$(find /usr/local/texlive -name "bin" -type d | grep -m 1 "bin/x86_64-linux\|bin/aarch64-linux")
-if [ -n "$TEXLIVE_BIN_PATH" ]; then
-    echo "Found TeX Live binaries at: $TEXLIVE_BIN_PATH"
-    # Add to PATH
-    echo "export PATH=\"$TEXLIVE_BIN_PATH:\$PATH\"" >> /etc/profile
-    
-    # Create symlinks in /usr/local/bin
-    for binary in $(ls "$TEXLIVE_BIN_PATH"); do
-        ln -sf "$TEXLIVE_BIN_PATH/$binary" /usr/local/bin/$binary
-    done
-else
-    echo "Warning: Could not find TeX Live binaries directory"
-    echo "TeX Live might be installed but PATH not set correctly"
-    echo "Check /usr/local/texlive/ for the installation directory"
-fi
+# Add TeX Live to PATH
+echo 'export PATH="/usr/local/2025/bin/x86_64-linuxmusl:$PATH"' >> /etc/profile
 
-# Install LaTeX tools for VSCodium
-apk add latexmk chktex
-
-# Update PATH for current session
-export PATH="/usr/local/bin:$PATH"
-
-# Verify installation
-which pdflatex || echo "pdflatex not found in PATH"
-which latexmk || echo "latexmk not found in PATH"
-pdflatex --version || echo "Could not run pdflatex"
-latexmk --version || echo "Could not run latexmk"
+apk add texmaker
 
 # Install GitHub Desktop via Flatpak
 apk add flatpak
