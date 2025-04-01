@@ -29,8 +29,21 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
 
 # Remove unnecessary GNOME apps
-apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
-      gnome-calendar yelp simple-scan xsane totem snapshot gnome-software firefox WebKitWebProcess epiphany
+apk del gnome-weather
+apk del gnome-clocks
+apk del gnome-contacts
+apk del cheese
+apk del gnome-tour
+apk del gnome-music
+apk del gnome-calendar
+apk del yelp
+apk del simple-scan
+apk del xsane
+apk del totem
+apk del snapshot
+apk del gnome-software
+apk del firefox
+apk del epiphany
 
 # Install LaTeX (Full) - with proper dependencies
 apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
