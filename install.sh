@@ -53,10 +53,61 @@ echo 'export PATH="/usr/local/2025/bin/x86_64-linuxmusl:$PATH"' >> /etc/profile
 
 apk add texstudio
 
-# Install GitHub Desktop via Flatpak
+
+
+
+
+
+
+
+
+
+
+
+# Install GitHub Desktop via Flatpak with robust error handling
+echo "Installing GitHub Desktop via Flatpak..."
 apk add flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub io.github.shiftey.Desktop -y
+
+# Clean up any existing installation
+if flatpak list | grep -q io.github.shiftey.Desktop; then
+    flatpak remove -y --noninteractive io.github.shiftey.Desktop
+    flatpak uninstall -y --unused
+fi
+
+# Install with automatic branch selection
+if ! flatpak install -y flathub io.github.shiftey.Desktop; then
+    echo "Falling back to stable branch..."
+    flatpak install -y flathub io.github.shiftey.Desktop//stable
+fi
+
+# Verify and fix installation
+{
+    flatpak list | grep -q io.github.shiftey.Desktop && \
+    update-desktop-database /var/lib/flatpak/exports/share/applications && \
+    echo "GitHub Desktop installed successfully"
+} || {
+    echo "Installation may need manual intervention. After reboot run:"
+    echo "flatpak install flathub io.github.shiftey.Desktop"
+}
+
+# Ensure desktop files are accessible
+find /var/lib/flatpak/exports/share/applications -name "*.desktop" -exec chmod 644 {} \;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Make UTF-8 locale persistent
 echo "export LANG=en_US.UTF-8" >> /etc/profile
