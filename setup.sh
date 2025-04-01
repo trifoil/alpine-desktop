@@ -1,24 +1,24 @@
 #!/bin/bash
 
-#!/bin/bash
-
 # Function to display the menu and handle user selection
 show_menu() {
     clear
     echo "Available scripts:"
     
-    # Find all .sh files, sort them by their numeric prefix, and display in a menu
-    local count=0
+    # Find and sort all .sh files with numeric prefixes
     local scripts=()
-    
-    # Read all matching files into an array
-    while IFS= read -r -d $'\0' file; do
+    for file in [0-9]*_*.sh; do
+        [[ -f "$file" ]] || continue  # Ensure it's a regular file
         scripts+=("$file")
-    done < <(find . -maxdepth 1 -type f -name "[0-9]*_*.sh" -print0 | sort -z -n)
+    done
+    
+    # Sort scripts by their numeric prefix
+    IFS=$'\n' scripts=($(sort -n <<< "${scripts[*]}"))
+    unset IFS
     
     # Display the menu
-    for ((i=0; i<${#scripts[@]}; i++)); do
-        filename=$(basename "${scripts[$i]}")
+    for i in "${!scripts[@]}"; do
+        filename="${scripts[$i]}"
         # Extract the number and name parts
         num=$(echo "$filename" | sed -E 's/^([0-9]+)_.*\.sh$/\1/')
         name=$(echo "$filename" | sed -E 's/^[0-9]+_(.*)\.sh$/\1/')
@@ -55,7 +55,7 @@ while true; do
         if [[ "$num" == "$choice" ]]; then
             found=1
             echo "Executing $script..."
-            chmod +x "$script"
+            chmod +x "$script" 2>/dev/null  # Make executable if not already
             ./"$script"
             read -p "Press [Enter] to continue..."
             break
