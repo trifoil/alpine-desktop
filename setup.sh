@@ -1,3 +1,5 @@
+#!/bin/bash
+
 options=(
     "Basic install"
     "Latex full install"
