@@ -62,5 +62,46 @@ flatpak install flathub io.github.shiftey.Desktop -y
 echo "export LANG=en_US.UTF-8" >> /etc/profile
 echo "export LC_ALL=en_US.UTF-8" >> /etc/profile
 
+# Virtualization setup
+echo "Checking virtualization support..."
+if [ -z "$(grep -E 'vmx|svm' /proc/cpuinfo)" ]; then
+    echo "WARNING: Virtualization extensions not found in /proc/cpuinfo"
+    echo "You may need to enable virtualization in your BIOS/UEFI settings"
+else
+    echo "Virtualization support detected in CPU"
+fi
+
+# Install virt-manager and all required components
+echo "Installing virtualization packages..."
+apk add libvirt libvirt-daemon libvirt-client libvirt-daemon-openrc virt-manager qemu qemu-img qemu-system-x86_64 qemu-modules ebtables dnsmasq bridge-utils iptables openrc libvirt-bash-completion
+
+# Load KVM modules
+modprobe kvm
+modprobe kvm_intel 2>/dev/null || modprobe kvm_amd 2>/dev/null
+
+# Start and enable libvirt daemon
+rc-update add libvirtd
+rc-service libvirtd start
+
+# Add user to libvirt group
+MAIN_USER=$(ls /home | head -n 1)
+if [ -n "$MAIN_USER" ]; then
+    adduser $MAIN_USER libvirt
+    echo "Added user $MAIN_USER to libvirt group"
+else
+    echo "No regular user found in /home directory"
+fi
+
+# Verify installation
+if virsh list --all &>/dev/null; then
+    echo "libvirt is working correctly"
+else
+    echo "libvirt installation may have issues - check logs with: rc-service libvirtd status"
+    echo "You might need to load kernel modules manually:"
+    echo "modprobe kvm"
+    echo "modprobe kvm_intel (or kvm_amd depending on your CPU)"
+    echo "Then restart libvirt: rc-service libvirtd restart"
+fi
+
 # Reboot
 reboot
