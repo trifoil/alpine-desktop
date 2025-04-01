@@ -28,58 +28,6 @@ apk add vscodium btop curl nano fastfetch librewolf gnome-abrt bash-completion
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
 
-read -n 1 -s -r -p "Done. Press any key to continue..."
-
-
-# Install LaTeX (Full) - with proper dependencies
-apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
-
-# Install TeX Live
-wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://mirror.ctan.net/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://mirror.ctan.org/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://ctan.mines-albi.fr/systems/texlive/tlnet/install-tl-unx.tar.gz
-wget https://za.mirrors.cicku.me/ctan/systems/texlive/tlnet/install-tl-unx.tar.gz
-
- 
-tar -xzf install-tl-unx.tar.gz
-cd install-tl-*
-
-# Install TeX Live with basic scheme
-TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl \
-    --scheme=basic \
-    --no-interaction
-
-cd ..
-rm -rf install-tl-* install-tl-unx.tar.gz
-
-# Add TeX Live to PATH
-echo 'export PATH="/usr/local/2025/bin/x86_64-linuxmusl:$PATH"' >> /etc/profile
-
-apk add texstudio
-
-
-
-
-
-
-
-
-
-
-read -n 1 -s -r -p "Done. Press any key to continue..."
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Make UTF-8 locale persistent
 echo "export LANG=en_US.UTF-8" >> /etc/profile

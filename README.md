@@ -37,7 +37,7 @@
    ```bash
    git clone https://github.com/trifoil/alpine-desktop
    cd alpine-desktop
-   sh install.sh
+   sh setup.sh
    cd ..
    rm -rf alpine-desktop
    ```
@@ -49,27 +49,3 @@
 2. **Cleaning**
    - Removing a package will automatically remove all of its dependencies that are otherwise not used
 
-```
-# Install GitHub Desktop via Flatpak with proper error handling
-echo "Installing GitHub Desktop via Flatpak..."
-apk add flatpak
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-# Install with full ref and verification
-if ! flatpak install -y flathub io.github.shiftey.Desktop 2>/dev/null; then
-    echo "Retrying with full reference..."
-    flatpak install -y flathub io.github.shiftey.Desktop//stable
-fi
-
-# Verify installation
-if flatpak list | grep -q io.github.shiftey.Desktop; then
-    echo "GitHub Desktop installed successfully"
-else
-    echo "Warning: GitHub Desktop installation may have issues"
-    echo "Try manually after reboot with:"
-    echo "flatpak install flathub io.github.shiftey.Desktop//stable"
-fi
-
-# Fix desktop file permissions (often needed on Alpine)
-find /var/lib/flatpak/exports/share/applications -name "*github*.desktop" -exec chmod 644 {} \;
-```
