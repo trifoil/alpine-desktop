@@ -1,39 +1,39 @@
 #!/bin/bash
 
-# Function to display the menu
-show_menu() {
-    echo "Available scripts:"
-    for file in *.sh; do
-        # Extract the number and name from the filename
-        if [[ $file =~ ^([0-9]+)_(.*)\.sh$ ]]; then
-            number=${BASH_REMATCH[1]}
-            name=${BASH_REMATCH[2]}
-            echo "$number) $name"
+# Function to display menu and execute scripts
+display_menu() {
+    while true; do
+        clear
+        echo "Select a script to execute:" 
+        echo "---------------------------------"
+        local i=1
+        declare -A script_map
+        
+        # Find .sh files and sort them
+        for script in $(ls *.sh 2>/dev/null | grep -v "setup.sh" | sort -V); do
+            script_name="${script%.sh}"
+            script_map[$i]="$script"
+            echo "$i) $script_name"
+            ((i++))
+        done
+        
+        echo "q) Quit"
+        echo "---------------------------------"
+        read -p "Enter your choice: " choice
+
+        if [[ "$choice" == "q" ]]; then
+            echo "Exiting..."
+            exit 0
+        elif [[ -n "${script_map[$choice]}" ]]; then
+            echo "Executing ${script_map[$choice]}..."
+            chmod +x "${script_map[$choice]}"
+            "./${script_map[$choice]}"
+            read -p "Press Enter to continue..."
+        else
+            echo "Invalid choice! Try again."
+            sleep 1
         fi
     done
-    echo "q) Exit"
 }
 
-# Function to execute the selected script
-execute_script() {
-    read -p "Choose a number to execute the script or 'q' to exit: " choice
-    if [[ $choice == "q" ]]; then
-        echo "Exiting..."
-        exit 0
-    fi
-
-    # Find the script corresponding to the chosen number
-    selected_file=$(ls | grep "^${choice}_.*\.sh$")
-    if [[ -n $selected_file ]]; then
-        echo "Executing $selected_file..."
-        bash "$selected_file"
-    else
-        echo "Invalid choice. Please try again."
-    fi
-}
-
-# Main loop to show the menu and execute scripts
-while true; do
-    show_menu
-    execute_script
-done
+display_menu
