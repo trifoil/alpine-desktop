@@ -23,17 +23,13 @@ execute_script() {
     fi
 
     # Find the script corresponding to the chosen number
-    for file in *.sh; do
-        if [[ $file =~ ^([0-9]+)_(.*)\.sh$ ]]; then
-            number=${BASH_REMATCH[1]}
-            if [[ $number == $choice ]]; then
-                echo "Executing $file..."
-                bash "$file"
-                return
-            fi
-        fi
-    done
-    echo "Invalid choice. Please try again."
+    selected_file=$(ls | grep "^${choice}_.*\.sh$")
+    if [[ -n $selected_file ]]; then
+        echo "Executing $selected_file..."
+        bash "$selected_file"
+    else
+        echo "Invalid choice. Please try again."
+    fi
 }
 
 # Main loop to show the menu and execute scripts
