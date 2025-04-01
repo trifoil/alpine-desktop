@@ -65,11 +65,11 @@ fi
 
 # Install virt-manager and related packages
 echo "Installing virt-manager and virtualization tools..."
-apk add virt-manager libvirt qemu qemu-img qemu-system-x86_64 ebtables dnsmasq bridge-utils
+apk add virt-manager libvirt qemu qemu-img qemu-system-x86_64 ebtables dnsmasq bridge-utils iptables
 
-# Start and enable libvirt service
-rc-update add libvirtd
-service libvirtd start
+# Start and enable libvirt service (Alpine-specific commands)
+rc-service libvirt start
+rc-update add libvirt
 
 # Add user to libvirt group (assuming the main user is the one who installed the system)
 MAIN_USER=$(ls /home | head -n 1)
@@ -84,7 +84,10 @@ fi
 if virsh list --all &>/dev/null; then
     echo "libvirt is working correctly"
 else
-    echo "libvirt installation may have issues - check journalctl for errors"
+    echo "libvirt installation may have issues - check logs with: rc-service libvirt status"
+    echo "You might need to load kernel modules with:"
+    echo "modprobe kvm"
+    echo "modprobe kvm_intel (or kvm_amd depending on your CPU)"
 fi
 ```
 
