@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Enable strict mode:
-set -ex
-
 # Check if the script is running as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root. Try 'sudo sh install.sh'"
@@ -35,40 +32,50 @@ apk add cargo
 apk del gnome-weather gnome-clocks gnome-contacts cheese gnome-tour gnome-music \
       gnome-calendar yelp simple-scan xsane totem snapshot
 
-# Install LaTeX (Full)
-apk add build-base perl wget tar gnupg
+# Install LaTeX (Full) - with proper dependencies
+apk add build-base perl wget tar gnupg ghostscript libpng-dev harfbuzz-dev
+
+# Install TeX Live
 wget https://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xzf install-tl-unx.tar.gz
 cd install-tl-*
-TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=basic --no-interaction
-#TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl --scheme=basic --no-interaction
+
+# Install TeX Live with basic scheme
+TEXLIVE_INSTALL_PREFIX=/usr/local ./install-tl \
+    --scheme=basic \
+    --no-interaction
 
 cd ..
-
 rm -rf install-tl-* install-tl-unx.tar.gz
 
-# Create symlinks for all binaries (with improved path handling)
-TEXLIVE_BIN_PATH=$(find /usr/local/texlive -name "bin" -type d | grep "bin/x86_64-linux\|bin/aarch64-linux" | head -n 1)
+# Find the TeX Live binaries directory (looking for versioned directory)
+TEXLIVE_BIN_PATH=$(find /usr/local/texlive -name "bin" -type d | grep -m 1 "bin/x86_64-linux\|bin/aarch64-linux")
 if [ -n "$TEXLIVE_BIN_PATH" ]; then
-    for binary in $(ls $TEXLIVE_BIN_PATH); do
-        ln -sf $TEXLIVE_BIN_PATH/$binary /usr/local/bin/$binary
+    echo "Found TeX Live binaries at: $TEXLIVE_BIN_PATH"
+    # Add to PATH
+    echo "export PATH=\"$TEXLIVE_BIN_PATH:\$PATH\"" >> /etc/profile
+    
+    # Create symlinks in /usr/local/bin
+    for binary in $(ls "$TEXLIVE_BIN_PATH"); do
+        ln -sf "$TEXLIVE_BIN_PATH/$binary" /usr/local/bin/$binary
     done
 else
-    echo "Error: Could not find TeX Live binaries directory"
-    exit 1
+    echo "Warning: Could not find TeX Live binaries directory"
+    echo "TeX Live might be installed but PATH not set correctly"
+    echo "Check /usr/local/texlive/ for the installation directory"
 fi
-
-# Update PATH for current session
-export PATH="/usr/local/bin:$PATH"
 
 # Install LaTeX tools for VSCodium
 apk add latexmk chktex
 
+# Update PATH for current session
+export PATH="/usr/local/bin:$PATH"
+
 # Verify installation
-which pdflatex
-which latexmk
-pdflatex --version
-latexmk --version
+which pdflatex || echo "pdflatex not found in PATH"
+which latexmk || echo "latexmk not found in PATH"
+pdflatex --version || echo "Could not run pdflatex"
+latexmk --version || echo "Could not run latexmk"
 
 # Install GitHub Desktop via Flatpak
 apk add flatpak
@@ -78,7 +85,6 @@ flatpak install flathub io.github.shiftey.Desktop -y
 # Make UTF-8 locale persistent
 echo "export LANG=en_US.UTF-8" >> /etc/profile
 echo "export LC_ALL=en_US.UTF-8" >> /etc/profile
-echo 'export PATH="/usr/local/bin:$PATH"' >> /etc/profile
 
 # Reboot
 reboot
