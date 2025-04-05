@@ -18,36 +18,7 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# Install NetworkManager and disable conflicting services first
-echo "Installing and configuring NetworkManager..."
-apk add networkmanager networkmanager-cli networkmanager-tui networkmanager-wifi
-
-# Stop and disable conflicting network services
-rc-service networking stop
-rc-service wpa_supplicant stop
-rc-update del networking boot
-rc-update del wpa_supplicant boot
-
-# Configure NetworkManager
-cat > /etc/NetworkManager/NetworkManager.conf <<EOF
-[main] 
-dhcp=internal
-plugins=ifupdown,keyfile
-
-[ifupdown]
-managed=true
-
-[device]
-wifi.scan-rand-mac-address=yes
-wifi.backend=wpa_supplicant
-EOF
-
-# Start NetworkManager
-rc-service networkmanager start
-rc-update add networkmanager default
-
-# Install GNOME (after NetworkManager is set up)
-echo "Installing GNOME desktop..."
+# Install GNOME
 setup-desktop gnome
 
 # Install essential tools (now including btop)
@@ -63,11 +34,13 @@ rc-init apk-polkit-server
 apk add intel-media-driver
 apk add bluez bluez-openrc
 
+
 read -p "Press [Enter] to continue..."
 
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 apk add cargo
+
 
 # Make UTF-8 locale persistent
 echo "export LANG=en_US.UTF-8" >> /etc/profile
@@ -103,9 +76,39 @@ else
     echo "No regular user found in /home directory"
 fi
 
-# Start polkit
+apk add networkmanager-cli 
+apk add networkmanager-tui
+apk add networkmanager-wifi
+
+cat <<EOF
+Contents of /etc/NetworkManager/NetworkManager.conf
+[main] 
+dhcp=internal
+plugins=ifupdown,keyfile
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=yes
+wifi.backend=wpa_supplicant
+EOF
+
+rc-service networking stop
+rc-service wpa_supplicant stop
+
+rc-service networkmanager restart
+
+#for user in $(cat /etc/passwd | cut -d: -f1); do
+#  adduser $user plugdev
+#done
+
 rc-service polkit start
 rc-update add polkit default
+rc-update add networkmanager default
+rc-update del networking boot
+rc-update del wpa_supplicant boot
+
 
 # Verify installation
 if virsh list --all &>/dev/null; then
@@ -120,6 +123,7 @@ fi
 
 # Remove unnecessary GNOME apps
 apk del gnome-weather
+#apk del gnome-clocks
 apk del gnome-contacts
 apk del cheese
 apk del gnome-tour
