@@ -17,12 +17,17 @@
    - Mirror (pick a nearby one)
    - SSH server (enable if needed)
    - Disk partitioning:
-     - **Recommended**: `sys` (entire disk, ext4)
-     - Advanced users: Manual (`manual`) for custom partitions.
-   - Set root password.
-   - Install to disk (`y`).
+     - **DO NOT**: ctrl+c
 
-5. **Reboot**:
+5. **Disk encryption**
+   - apk add lsblk gptfdisk btrfs-progs e2fsprogs
+   - modprobe btrfs
+   - apk add cryptsetup
+   - apk add lvm2
+
+   
+
+6. **Reboot**:
    ```bash
    reboot
    ```

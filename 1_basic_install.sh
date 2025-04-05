@@ -84,7 +84,7 @@ fi
 
 # Remove unnecessary GNOME apps
 apk del gnome-weather
-apk del gnome-clocks
+#apk del gnome-clocks
 apk del gnome-contacts
 apk del cheese
 apk del gnome-tour
