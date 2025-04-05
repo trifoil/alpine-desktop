@@ -30,7 +30,14 @@ fi
 
 # Install required packages first
 echo -e "${GREEN}Installing required tools...${NC}"
-apk add --no-cache parted gptfdisk cryptsetup lvm2 btrfs-progs e2fsprogs lsblk
+apk add --no-cache parted 
+apk add --no-cache gptfdisk 
+apk add --no-cache cryptsetup 
+apk add --no-cache lvm2 
+apk add --no-cache btrfs-progs
+apk add --no-cache e2fsprogs
+apk add --no-cache lsblk
+
 
 # Verify target disk
 echo -e "${YELLOW}Target disk: $DISK${NC}"
