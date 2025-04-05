@@ -220,7 +220,7 @@ Create mountpoints and mount our partitions and subvolumes
 mount /dev/vg0/alpine -o subvol=@ /mnt/
 
 # Create mountpoints
-mkdir -p /mnt/boot /mnt/boot /mnt/var/log
+mkdir -p /mnt/boot /mnt/home /mnt/var/log
 
 # Mount the remaining subvolumes
 mount /dev/vg0/alpine -o subvol=@var_log /mnt/var/log
@@ -234,6 +234,45 @@ mount /dev/nvme0n1p1 /mnt/boot
 mount /dev/vg0/home /mnt/home
 ```
 
+
+Install a base alpine system
+
+```sh
+BOOTLOADER=none setup-disk -k edge /mnt
+```
+
+The BOOTLOADER=none tells the script to not install any bootloader (grub is the default), and -k edge tells the script to install the edge kernel instead of the lts one.
+
+
+
+```sh
+chroot /mnt
+mount -t proc proc /proc
+mount -t devtmpfs dev /dev
+```
+
+
+
+```sh
+setup-apkcache
+apk add secureboot-hook 
+apk add gummiboot-efistub
+apk add blkid
+```
+
+
+Edit /etc/kernel-hooks.d/secureboot.conf with the following contents.
+
+```conf
+cmdline=/etc/kernel/cmdline
+signing_disabled=yes
+output_dir="/boot/EFI/Linux"
+output_name="alpine-linux-{flavor}.efi"
+```
+
+/<efi>/EFI/Linux is a more or less standard directory, and will be discovered by systemd-boot if you have that installed.
+
+Signing is disabled only temporarily until I install the proper keys.
 
 credits to https://www.vixalien.com/blog/an-alpine-setup/#main for LUKS and disk management
 

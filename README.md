@@ -53,3 +53,14 @@
 
 2. **Cleaning**
    - Removing a package will automatically remove all of its dependencies that are otherwise not used
+
+
+
+
+# Test
+
+```
+wget https://raw.githubusercontent.com/trifoil/alpine-desktop/main/test.sh -O install.sh
+chmod +x install.sh
+./install.sh
+```
