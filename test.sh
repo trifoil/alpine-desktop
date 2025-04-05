@@ -13,7 +13,7 @@ ROOT_PASSWORD="rootpass123"             # root password
 USER_PASSWORD="userpass123"             # Main user password
 EFI_SIZE="512M"                         # EFI partition size
 SWAP_SIZE="2G"                          # Swap size (adjust to your RAM)
-ROOT_SIZE="5G"                         # Root partition size
+ROOT_SIZE="5G"                          # Root partition size
 REPO_URL="http://dl-cdn.alpinelinux.org/alpine/edge/main"  # Alpine repository
 
 # Colors for output
@@ -28,16 +28,23 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Install required packages first
+echo -e "${GREEN}Installing required tools...${NC}"
+apk add --no-cache parted gptfdisk cryptsetup lvm2 btrfs-progs e2fsprogs lsblk
+
 # Verify target disk
 echo -e "${YELLOW}Target disk: $DISK${NC}"
-lsblk $DISK || {
+if [ ! -b "$DISK" ]; then
     echo -e "${RED}Invalid disk specified!${NC}"
     exit 1
-}
+fi
 
-# Install required packages
-echo -e "${GREEN}Installing required tools...${NC}"
-apk add --no-cache lsblk parted gptfdisk cryptsetup lvm2 btrfs-progs e2fsprogs
+# Show disk information
+echo -e "${GREEN}Disk information:${NC}"
+fdisk -l $DISK || {
+    echo -e "${RED}Error checking disk!${NC}"
+    exit 1
+}
 
 # Partition the disk
 echo -e "${GREEN}Partitioning $DISK...${NC}"
