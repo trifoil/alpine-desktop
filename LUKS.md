@@ -212,7 +212,34 @@ btrfs subvolume get-default /mnt
 umount /mnt
 ```
 
+Mount partitions
+
+Create mountpoints and mount our partitions and subvolumes
+
+```sh
+mount /dev/vg0/alpine -o subvol=@ /mnt/
+
+# Create mountpoints
+mkdir -p /mnt/boot /mnt/boot /mnt/var/log
+
+# Mount the remaining subvolumes
+mount /dev/vg0/alpine -o subvol=@var_log /mnt/var/log
+
+# Mount the efi system partition
+modprobe vfat
+modprobe fat
+mount /dev/nvme0n1p1 /mnt/boot
+
+# Mount the home partition
+mount /dev/vg0/home /mnt/home
+```
 
 
 credits to https://www.vixalien.com/blog/an-alpine-setup/#main for LUKS and disk management
 
+
+
+important pour booter 
+
+echo "vfat" >> /etc/modules
+echo "fat" >> /etc/modules
