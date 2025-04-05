@@ -29,6 +29,11 @@ apk add nano
 apk add fastfetch 
 apk add librewolf 
 apk add bash-completion 
+apk add power-profiles-daemon
+rc-init apk-polkit-server
+apk add intel-media-driver
+apk add bluez bluez-openrc
+
 
 read -p "Press [Enter] to continue..."
 
@@ -70,6 +75,38 @@ if [ -n "$MAIN_USER" ]; then
 else
     echo "No regular user found in /home directory"
 fi
+
+apk add networkmanager-cli 
+apk add networkmanager-tui
+apk add networkmanager-wifi
+
+cat <<EOF
+Contents of /etc/NetworkManager/NetworkManager.conf
+[main] 
+dhcp=internal
+plugins=ifupdown,keyfile
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=yes
+wifi.backend=wpa_supplicant
+EOF
+
+rc-service networking stop
+rc-service wpa_supplicant stop
+
+rc-service networkmanager restart
+
+#for user in $(cat /etc/passwd | cut -d: -f1); do
+#  adduser $user plugdev
+#done
+
+rc-update add networkmanager default
+rc-update del networking boot
+rc-update del wpa_supplicant boot
+
 
 # Verify installation
 if virsh list --all &>/dev/null; then
