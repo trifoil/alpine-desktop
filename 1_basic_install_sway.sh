@@ -19,7 +19,7 @@ export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
 # Install GNOME
-setup-desktop gnome
+setup-desktop sway
 
 # Install essential tools (now including btop)
 apk add vscodium
