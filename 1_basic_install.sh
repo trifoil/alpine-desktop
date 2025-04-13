@@ -18,11 +18,22 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# Install GNOME
-setup-desktop gnome
+# Install DWM
+setup-devd udev 
+apk add dbus
+apk add dbus-x11
+rc-update add dbus
+rc-service dbus start
+
+
+
+apk add dwm dmenu st
+
+
+
 
 # Install essential tools (now including btop)
-apk add vscodium
+# apk add vscodium
 apk add btop
 apk add curl
 apk add nano
