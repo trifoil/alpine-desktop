@@ -6,3 +6,17 @@
 
 ## Details
 
+### Window manager
+
+* sway
+* rofi
+* 
+
+
+
+
+### Apps
+
+* VIM
+* ranger
+* 
