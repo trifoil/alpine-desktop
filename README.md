@@ -8,12 +8,13 @@
 
 ### Window manager
 
+
 * sway
+* sddm
+* polybar
 * rofi
 * conky
-
-
-
+* ubuntu mono
 
 ### Apps
 
