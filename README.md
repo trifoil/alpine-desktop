@@ -10,7 +10,7 @@
 
 * sway
 * rofi
-* 
+* conky
 
 
 
