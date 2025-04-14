@@ -5,13 +5,12 @@ echo "🚀 Setting up Polybar for Sway on Alpine Linux..."
 
 # 1. Install required packages
 echo "📦 Installing dependencies..."
-doas apk add --no-cache \
-    polybar \
-    jq \
-    font-dejavu \
-    ttf-font-awesome \
-    pavucontrol \      # PulseAudio control (volume)
-    brightnessctl      # Brightness control
+doas apk add polybar 
+doas apk add jq 
+doas apk add font-dejavu 
+doas apk add ttf-font-awesome 
+doas apk add pavucontrol       # PulseAudio control (volume)
+doas apk add brightnessctl      # Brightness control
 
 # 2. Create config directories
 mkdir -p ~/.config/polybar
