@@ -1,54 +1,56 @@
 #!/bin/bash
 # Script d'installation et de lancement de sway sur Alpine Linux.
-# Ce script vérifie la version d’Alpine, met à jour (si nécessaire) les dépôts,
-# installe sway et ses dépendances, propose de créer un utilisateur non-root
-# si aucun n'existe, configure l'environnement et lance sway.
+# Il vérifie la version d’Alpine, propose de corriger les dépôts en cas de version obsolète
+# ou de référence invalide (par exemple v3.22), installe sway et ses dépendances,
+# gère le choix/création d'un utilisateur non-root, prépare la configuration et lance sway.
 #
 # Usage :
 #   ./install_sway.sh [-u USER]
 # Si l'option -u (ou --user) n'est pas précisée, le script tente d'utiliser la variable SUDO_USER.
-# S'il n'existe aucun utilisateur non-root, une option de création d'utilisateur sera proposée.
+# S'il n'existe aucun utilisateur non‑root, une option de création sera proposée.
 
-# Active le mode "strict" afin que le script s'arrête en cas d'erreur.
 set -euo pipefail
 
+############################################
 # Fonction d'affichage d'erreur et sortie.
+############################################
 error_exit() {
     echo "[Erreur] $1" >&2
     exit 1
 }
 
-# Vérifier que le script est exécuté en tant que root.
+############################################
+# Vérifier que le script est exécuté en root.
+############################################
 if [ "$(id -u)" -ne 0 ]; then
     error_exit "Ce script doit être exécuté en tant que root."
 fi
 
 ########################################################################
-# Vérification de la version d'Alpine et mise à jour des dépôts si besoin
+# Vérification de la version d'Alpine et mise à jour des dépôts si nécessaire
 ########################################################################
 if [ -f /etc/alpine-release ]; then
-    # Récupère la version majeure.minor, par exemple "3.2" pour "3.2.2"
+    # Récupération de la version majeure.minor (ex: "3.2" pour "3.2.2")
     ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release)
 else
     error_exit "Fichier /etc/alpine-release introuvable. Impossible de déterminer la version d'Alpine Linux."
 fi
 
-# Si Alpine 3.2 est détecté, proposer de mettre à jour les dépôts vers l'archive
+# Si Alpine 3.2 est détecté, proposer de mettre à jour les dépôts vers l'archive officielle
 if [ "$ALPINE_VERSION" = "3.2" ]; then
     echo "Votre version d'Alpine ($ALPINE_VERSION) est obsolète et les dépôts officiels ne sont plus disponibles."
-    echo "Afin de poursuivre, vous pouvez mettre à jour automatiquement le fichier des dépôts vers les archives."
+    echo "Vous pouvez mettre à jour automatiquement le fichier des dépôts vers les archives."
     while true; do
         read -p "Mettre à jour /etc/apk/repositories pour Alpine 3.2 (archive) ? (O/n) : " repo_choice
         case "$repo_choice" in
             [Oo]*|"")
-                # Sauvegarde du fichier actuel
                 cp /etc/apk/repositories /etc/apk/repositories.bak || error_exit "Impossible de sauvegarder /etc/apk/repositories."
                 echo "Sauvegarde réalisée dans /etc/apk/repositories.bak."
                 cat <<EOF > /etc/apk/repositories
 http://dl-3.alpinelinux.org/alpine/v3.2/main
 http://dl-3.alpinelinux.org/alpine/v3.2/community
 EOF
-                echo "Dépôts mis à jour vers l'archive Alpine 3.2."
+                echo "Dépôts mis à jour vers les archives Alpine 3.2."
                 break
                 ;;
             [Nn]* )
@@ -56,6 +58,41 @@ EOF
                 ;;
             * )
                 echo "Veuillez répondre par O (Oui) ou N (Non)."
+                ;;
+        esac
+    done
+fi
+
+########################################################################
+# Vérification du fichier /etc/apk/repositories pour détecter une référence invalide (ex: v3.22)
+########################################################################
+if grep -q "v3.22" /etc/apk/repositories; then
+    echo "Votre fichier /etc/apk/repositories contient 'v3.22', ce qui n'existe pas sur les miroirs officiels."
+    while true; do
+        echo "Choisissez une des options suivantes pour corriger vos dépôts :"
+        echo "  1) Remplacer 'v3.22' par 'v3.18' (version stable)"
+        echo "  2) Remplacer 'v3.22' par 'edge' (branche de développement)"
+        echo "  3) Ne rien faire (attention, apk update risque d'échouer)"
+        read -p "Entrez votre choix (1, 2 ou 3) : " repo_option
+        case "$repo_option" in
+            1)
+                cp /etc/apk/repositories /etc/apk/repositories.bak || error_exit "Impossible de sauvegarder /etc/apk/repositories."
+                sed -i 's|v3.22|v3.18|g' /etc/apk/repositories || error_exit "Échec lors de la mise à jour des dépôts."
+                echo "Les dépôts ont été mis à jour vers Alpine v3.18."
+                break
+                ;;
+            2)
+                cp /etc/apk/repositories /etc/apk/repositories.bak || error_exit "Impossible de sauvegarder /etc/apk/repositories."
+                sed -i 's|v3.22|edge|g' /etc/apk/repositories || error_exit "Échec lors de la mise à jour des dépôts."
+                echo "Les dépôts ont été mis à jour vers Alpine edge."
+                break
+                ;;
+            3)
+                echo "Les dépôts ne seront pas modifiés. Le script peut échouer lors de l'exécution de 'apk update'."
+                break
+                ;;
+            *)
+                echo "Sélection invalide. Veuillez choisir 1, 2 ou 3."
                 ;;
         esac
     done
@@ -94,9 +131,9 @@ if [ -z "$TARGET_USER" ]; then
         # Recherche d'un utilisateur non-root existant dans /etc/passwd
         EXISTING_USER=$(awk -F: '$1!="root" {print $1; exit}' /etc/passwd || true)
         if [ -z "$EXISTING_USER" ]; then
-            # Aucun utilisateur non-root trouvé, proposer la création d'un nouvel utilisateur
+            # Aucun utilisateur non-root trouvé, proposer de créer un nouvel utilisateur
             while true; do
-                read -p "Aucun utilisateur non-root n'existe. Voulez-vous créer un nouvel utilisateur ? (O/n) : " create_choice
+                read -p "Aucun utilisateur non-root n'existe. Voulez-vous en créer un ? (O/n) : " create_choice
                 case "$create_choice" in
                     [Oo]*|"")
                         while true; do
@@ -230,7 +267,6 @@ echo "  XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP}"
 echo "  XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}"
 
 echo "Lancement de sway pour l'utilisateur $TARGET_USER..."
-# Passage dans l'environnement de l'utilisateur cible et lancement de sway avec les variables
 su - "$TARGET_USER" -c "env XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=sway XDG_RUNTIME_DIR=/run/user/${TARGET_UID} sway" || error_exit "Échec du lancement de sway."
 
 echo "Script terminé avec succès."
