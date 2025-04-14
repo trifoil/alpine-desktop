@@ -1,186 +1,139 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+# Script d'installation et de lancement de sway sur Alpine Linux
+# Ce script installe sway et ses dépendances, prépare la configuration utilisateur
+# et lance sway dans un environnement non-root.
+#
+# Usage :
+#   ./install_sway.sh [-u USER]
+# Si l'option -u (ou --user) n'est pas précisée, le script essaie d'utiliser la variable SUDO_USER,
+# sinon il vous demandera de saisir le nom de l'utilisateur (ne pas utiliser "root").
 
-#############################
-# Helper Functions
-#############################
+# Activez un mode strict pour stopper le script en cas d'erreur
+set -euo pipefail
 
-# Function to log messages
-log() {
-  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $*"
-}
-
-# Check if a package is available in the repo via apk search.
-# This function uses a regular expression to match the entire package name.
-check_pkg_availability() {
-  pkg="$1"
-  # The caret (^) and dollar ($) ensure an exact name match.
-  if apk search -v "^${pkg}\$" | grep -q "^${pkg}"; then
-    return 0
-  else
-    return 1
-  fi
-}
-
-# Check all required packages.
-# Returns 0 if all packages are found; otherwise returns 1.
-check_all_packages() {
-  missing_pkgs=""
-  for pkg in $REQUIRED_PKGS; do
-    if check_pkg_availability "$pkg"; then
-      log "Found package: $pkg"
-    else
-      log "Missing package: $pkg"
-      missing_pkgs="$missing_pkgs $pkg"
-    fi
-  done
-
-  if [ -n "$missing_pkgs" ]; then
-    log "The following packages are missing:$missing_pkgs"
-    return 1
-  else
-    return 0
-  fi
-}
-
-# Set repositories to stable for a given Alpine version
-set_repos_stable() {
-  # Extract ALPINE_VERSION from /etc/alpine-release (format: "3.21.4")
-  ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release)
-  log "Setting repositories to Alpine stable v$ALPINE_VERSION"
-  cat <<EOF >/etc/apk/repositories
-https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main
-https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/community
-EOF
-}
-
-# Set repositories to edge channels
-set_repos_edge() {
-  log "Switching repositories to Alpine edge (rolling release)"
-  cat <<EOF >/etc/apk/repositories
-https://dl-cdn.alpinelinux.org/alpine/edge/main
-https://dl-cdn.alpinelinux.org/alpine/edge/community
-https://dl-cdn.alpinelinux.org/alpine/edge/testing
-EOF
-}
-
-# Update system package index and upgrade system
-update_system() {
-  log "Updating package list..."
-  apk update
-  log "Upgrading installed packages..."
-  apk upgrade
-}
-
-#############################
-# Main Script
-#############################
-
-# 1. Determine Architecture and Alpine Version
-ARCH=$(uname -m)
-log "Detected architecture: $ARCH"
-if [ -f /etc/alpine-release ]; then
-  ALPINE_FULL_VERSION=$(cat /etc/alpine-release)
-  ALPINE_VERSION=$(echo "$ALPINE_FULL_VERSION" | cut -d. -f1,2)
-  log "Detected Alpine version: $ALPINE_FULL_VERSION (using v${ALPINE_VERSION} for repos)"
-else
-  log "Error: /etc/alpine-release not found. Exiting."
-  exit 1
-fi
-
-# 2. Define the required packages (Sway, dependencies, fonts, and Mesa subpackages)
-REQUIRED_PKGS="
-sway
-swaybar
-swaybg
-alacritty
-wayland
-weston
-wayland-protocols
-wlroots
-dbus
-xwayland
-i3lock
-networkmanager
-networkmanager-openvpn
-sudo
-terminus-font
-fontconfig
-python3
-py3-pip
-ttf-dejavu
-mesa-egl
-mesa-gl
-mesa-gbm
-mesa-egl-wayland
-mesa-dri-intel
-mesa-dri-radeon
-mesa-dri-swrast
-"
-
-# 3. Set repositories to stable and update system
-set_repos_stable
-update_system
-
-# 4. Check availability of all required packages on stable
-if check_all_packages; then
-  log "All required packages found in the stable repositories."
-else
-  log "Not all packages are available in stable. Attempting to switch to edge repositories."
-  set_repos_edge
-  update_system
-  if check_all_packages; then
-    log "All required packages are now available from edge repositories."
-  else
-    log "Error: Even after switching to edge repositories, some packages are missing. Aborting installation."
+# Fonction d'arrêt en cas d'erreur
+error_exit() {
+    echo "[Erreur] $1" >&2
     exit 1
-  fi
+}
+
+# Vérification que le script est exécuté en tant que root
+if [ "$(id -u)" -ne 0 ]; then
+    error_exit "Ce script doit être exécuté en tant que root."
 fi
 
-# 5. Proceed with installation of all required packages
-log "Installing all required packages..."
-apk add --no-cache $REQUIRED_PKGS
+# Traitement des arguments pour spécifier l'utilisateur cible
+TARGET_USER=""
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        -u|--user)
+            TARGET_USER="$2"
+            shift
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-u USER]"
+            exit 0
+            ;;
+        *)
+            echo "Argument inconnu: $1"
+            exit 1
+            ;;
+    esac
+done
 
-# 6. Enable and Start Essential Services (dbus and NetworkManager)
-log "Enabling and starting dbus..."
-rc-update add dbus default
-service dbus start
+# Détermination de l'utilisateur cible
+if [ -z "$TARGET_USER" ]; then
+    if [ "${SUDO_USER:-}" != "" ] && [ "$SUDO_USER" != "root" ]; then
+        TARGET_USER="$SUDO_USER"
+    else
+        read -p "Entrez le nom de l'utilisateur pour lancer sway (ne pas utiliser 'root') : " TARGET_USER
+        if [ "$TARGET_USER" = "root" ] || [ -z "$TARGET_USER" ]; then
+            error_exit "Nom d'utilisateur invalide."
+        fi
+    fi
+fi
 
-log "Enabling and starting NetworkManager..."
-rc-update add networkmanager default
-service networkmanager start
+# Récupération du répertoire home de l'utilisateur cible
+TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+if [ -z "$TARGET_HOME" ] || [ ! -d "$TARGET_HOME" ]; then
+    error_exit "Répertoire home non trouvé pour l'utilisateur $TARGET_USER."
+fi
 
-# 7. Configure Environment Variables for Wayland/Sway session
-log "Configuring environment variables for Wayland..."
-cat <<EOF >> /etc/profile
-export XDG_SESSION_TYPE=wayland
-export XDG_SESSION_DESKTOP=sway
-export XDG_CURRENT_DESKTOP=sway
-export GDK_BACKEND=wayland
-export QT_QPA_PLATFORM=wayland
-export MOZ_ENABLE_WAYLAND=1
+echo "Installation de sway et des dépendances pour l'utilisateur $TARGET_USER ($TARGET_HOME)..."
+
+# Vérification de la connectivité Internet
+if ! ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1; then
+    error_exit "Connexion Internet non disponible. Veuillez vérifier votre réseau."
+fi
+
+# Mise à jour des dépôts apk
+echo "Mise à jour des dépôts apk..."
+apk update || error_exit "Échec de la mise à jour des dépôts apk."
+
+# Optionnel : proposer une mise à niveau du système (peut prendre un certain temps)
+echo "Souhaitez-vous mettre à niveau le système ? (y/N)"
+read -r upgrade_choice
+if [[ "$upgrade_choice" =~ ^[Yy]$ ]]; then
+    apk upgrade || error_exit "Échec de la mise à niveau du système."
+fi
+
+# Installation des paquets nécessaires
+echo "Installation des paquets nécessaires (sway, swaybg, swaylock, swayidle, waybar, wofi, grim, slurp)..."
+apk add --no-cache sway swaybg swaylock swayidle waybar wofi grim slurp || \
+    error_exit "Échec de l'installation des paquets sway et dépendances."
+
+# Installation d'un terminal (ici alacritty)
+echo "Installation du terminal alacritty (optionnel)..."
+apk add --no-cache alacritty || echo "Attention : l'installation d'alacritty a échoué. Vous pouvez installer un terminal de votre choix."
+
+# Préparation de la configuration de sway pour l'utilisateur cible
+SWAY_CONFIG_DIR="$TARGET_HOME/.config/sway"
+if [ ! -d "$SWAY_CONFIG_DIR" ]; then
+    echo "Création du répertoire de configuration $SWAY_CONFIG_DIR..."
+    mkdir -p "$SWAY_CONFIG_DIR" || error_exit "Impossible de créer le répertoire $SWAY_CONFIG_DIR."
+    chown "$TARGET_USER":"$TARGET_USER" "$SWAY_CONFIG_DIR"
+fi
+
+SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
+if [ ! -f "$SWAY_CONFIG_FILE" ]; then
+    if [ -f /etc/sway/config ]; then
+        echo "Copie du fichier de configuration par défaut depuis /etc/sway/config..."
+        cp /etc/sway/config "$SWAY_CONFIG_FILE" || error_exit "Échec de la copie du fichier de configuration."
+    else
+        echo "Création d'une configuration minimale pour sway..."
+        cat << 'EOF' > "$SWAY_CONFIG_FILE"
+# Configuration minimale pour sway
+set $mod Mod4
+
+# Lancement du terminal
+bindsym $mod+Return exec alacritty
+
+# Lanceur d'applications
+bindsym $mod+d exec wofi --show drun
+
+# Quitter une fenêtre
+bindsym $mod+Shift+q kill
+
+# Recharger la configuration
+bindsym $mod+Shift+c reload
+
+# Quitter sway
+bindsym $mod+Shift+e exec swaymsg exit
+
+# Définition d'un fond d'écran (ici une couleur unie)
+output * bg #282c34 solid_color
 EOF
-. /etc/profile
-
-# 8. Create configuration directories and download default configs for Sway and Alacritty
-log "Creating Sway configuration directory and downloading default config..."
-mkdir -p ~/.config/sway
-curl -fsSL -o ~/.config/sway/config https://raw.githubusercontent.com/swaywm/sway/master/config
-
-log "Creating Alacritty configuration directory and downloading default config..."
-mkdir -p ~/.config/alacritty
-curl -fsSL -o ~/.config/alacritty/alacritty.yml https://raw.githubusercontent.com/alacritty/alacritty/master/alacritty.yml
-
-# Verify that configuration files exist
-if [ ! -f ~/.config/sway/config ]; then
-  log "Error: Sway configuration file not found. Exiting."
-  exit 1
-fi
-if [ ! -f ~/.config/alacritty/alacritty.yml ]; then
-  log "Error: Alacritty configuration file not found. Exiting."
-  exit 1
+    fi
+    chown "$TARGET_USER":"$TARGET_USER" "$SWAY_CONFIG_FILE"
 fi
 
-# 9. Launch Sway
-log "Launching Sway..."
-exec sway
+echo "Configuration de sway terminée."
+
+# Lancement de sway en tant que l'utilisateur cible
+echo "Lancement de sway pour l'utilisateur $TARGET_USER..."
+# La commande suivante passe à l'environnement de l'utilisateur non-root et lance sway.
+su - "$TARGET_USER" -c "sway" || error_exit "Échec du lancement de sway."
+
+echo "Script terminé avec succès."
