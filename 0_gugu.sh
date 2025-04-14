@@ -7,14 +7,14 @@ echo "Setting up Polybar for Sway on Alpine Linux..."
 
 # 1. Install required packages
 echo "Installing dependencies..."
-sudo apk add --no-cache \
+doas apk add --no-cache \
     polybar \
     sway-ipc \
     jq \
     font-dejavu \
     ttf-font-awesome \
-    pulseaudio-utils \  # For volume control
-    brightnessctl      # For brightness control
+    pulseaudio-utils \
+    brightnessctl
 
 # 2. Create config directories
 echo "Creating config directories..."
