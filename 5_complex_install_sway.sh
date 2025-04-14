@@ -2,8 +2,8 @@
 set -e
 
 ##############################################
-# 1) Overwrite /etc/apk/repositories with v3.21 repos
-#    (Replace v3.21 with "edge" or your actual version if needed)
+# 1) Overwrite /etc/apk/repositories to use Alpine v3.21
+#    (Change v3.21 to "edge" or your version if needed)
 ##############################################
 cat <<EOF >/etc/apk/repositories
 https://dl-cdn.alpinelinux.org/alpine/v3.21/main
@@ -11,14 +11,15 @@ https://dl-cdn.alpinelinux.org/alpine/v3.21/community
 EOF
 
 ##############################################
-# 2) Update and upgrade
+# 2) Update & upgrade
 ##############################################
 apk update
 apk upgrade
 
 ##############################################
 # 3) Install Sway + dependencies
-#    using updated package names
+#    NOTE: We revert to the older package naming
+#    for Noto fonts & break down Mesa drivers.
 ##############################################
 apk add --no-cache \
   sway \
@@ -40,13 +41,13 @@ apk add --no-cache \
   python3 \
   py3-pip \
   \
-  # Noto fonts are renamed to "fonts-noto", "fonts-noto-cjk", etc.
-  fonts-noto \
-  fonts-noto-cjk \
-  fonts-noto-emoji \
+  # Revert to older naming for Noto fonts:
+  noto-fonts \
+  noto-fonts-cjk \
+  noto-fonts-emoji \
   \
-  # For Mesa / graphics, Alpine 3.21 no longer has a meta-package "mesa-dri".
-  # You must install Mesa and DRI drivers explicitly:
+  # Mesa drivers: "mesa-dri" is split into separate packages
+  # in newer Alpine. Install them all to cover Intel, AMD, software fallback.
   mesa \
   mesa-egl \
   mesa-gbm \
@@ -57,7 +58,7 @@ apk add --no-cache \
   mesa-dri-swrast
 
 ##############################################
-# 4) Enable and start dbus + NetworkManager
+# 4) Enable and start D-Bus and NetworkManager
 ##############################################
 rc-update add dbus default
 service dbus start
@@ -66,7 +67,7 @@ rc-update add networkmanager default
 service networkmanager start
 
 ##############################################
-# 5) Configure environment variables
+# 5) Configure Wayland environment variables
 ##############################################
 {
   echo "export XDG_SESSION_TYPE=wayland"
@@ -77,11 +78,11 @@ service networkmanager start
   echo "export MOZ_ENABLE_WAYLAND=1"
 } >> /etc/profile
 
-# Reload them for the current shell
+# Reload environment variables now
 . /etc/profile
 
 ##############################################
-# 6) Create default configs for Sway & Alacritty
+# 6) Create default configuration for Sway & Alacritty
 ##############################################
 mkdir -p ~/.config/sway
 curl -o ~/.config/sway/config \
@@ -91,14 +92,13 @@ mkdir -p ~/.config/alacritty
 curl -o ~/.config/alacritty/alacritty.yml \
   https://raw.githubusercontent.com/alacritty/alacritty/master/alacritty.yml
 
-# Verify they exist
-[ ! -f ~/.config/sway/config ] && { echo "Missing Sway config"; exit 1; }
-[ ! -f ~/.config/alacritty/alacritty.yml ] && { echo "Missing Alacritty config"; exit 1; }
+[ ! -f ~/.config/sway/config ] && { echo "Sway config missing!"; exit 1; }
+[ ! -f ~/.config/alacritty/alacritty.yml ] && { echo "Alacritty config missing!"; exit 1; }
 
 ##############################################
-# 7) (Optionally) Launch Sway directly
+# 7) Start Sway (directly or via startx)
 ##############################################
 exec sway
 
-# If you prefer startx (with .xinitrc that calls 'exec sway'), do:
+# If you prefer startx and have an .xinitrc with 'exec sway', do this:
 # startx
