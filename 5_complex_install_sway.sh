@@ -2,8 +2,8 @@
 set -e
 
 ##############################################
-# Hard-code Alpine repositories to v3.21
-# (Adjust if you want to use a different version)
+# 1) Overwrite /etc/apk/repositories with v3.21 repos
+#    (Replace v3.21 with "edge" or your actual version if needed)
 ##############################################
 cat <<EOF >/etc/apk/repositories
 https://dl-cdn.alpinelinux.org/alpine/v3.21/main
@@ -11,29 +11,15 @@ https://dl-cdn.alpinelinux.org/alpine/v3.21/community
 EOF
 
 ##############################################
-# Function to check if the previous command succeeded
+# 2) Update and upgrade
 ##############################################
-check_command() {
-  if [ $? -ne 0 ]; then
-    echo "Error during command execution: $1" >&2
-    exit 1
-  fi
-}
-
-##############################################
-# Update repositories and upgrade existing packages
-##############################################
-echo "Updating repositories and upgrading system..."
 apk update
-check_command "apk update"
-
 apk upgrade
-check_command "apk upgrade"
 
 ##############################################
-# Install Sway and other dependencies
+# 3) Install Sway + dependencies
+#    using updated package names
 ##############################################
-echo "Installing Sway and related packages..."
 apk add --no-cache \
   sway \
   swaybar \
@@ -51,32 +37,37 @@ apk add --no-cache \
   sudo \
   terminus-font \
   fontconfig \
-  noto-fonts \
-  noto-fonts-cjk \
-  noto-fonts-emoji \
   python3 \
   py3-pip \
-  mesa-dri
-check_command "apk add Sway dependencies"
+  \
+  # Noto fonts are renamed to "fonts-noto", "fonts-noto-cjk", etc.
+  fonts-noto \
+  fonts-noto-cjk \
+  fonts-noto-emoji \
+  \
+  # For Mesa / graphics, Alpine 3.21 no longer has a meta-package "mesa-dri".
+  # You must install Mesa and DRI drivers explicitly:
+  mesa \
+  mesa-egl \
+  mesa-gbm \
+  mesa-gl \
+  mesa-egl-wayland \
+  mesa-dri-intel \
+  mesa-dri-radeon \
+  mesa-dri-swrast
 
 ##############################################
-# Enable and start dbus and NetworkManager
+# 4) Enable and start dbus + NetworkManager
 ##############################################
-echo "Enabling dbus and NetworkManager..."
 rc-update add dbus default
-check_command "rc-update add dbus"
 service dbus start
-check_command "service dbus start"
 
 rc-update add networkmanager default
-check_command "rc-update add networkmanager"
 service networkmanager start
-check_command "service networkmanager start"
 
 ##############################################
-# Configure environment variables for Wayland
+# 5) Configure environment variables
 ##############################################
-echo "Configuring environment variables..."
 {
   echo "export XDG_SESSION_TYPE=wayland"
   echo "export XDG_SESSION_DESKTOP=sway"
@@ -85,51 +76,29 @@ echo "Configuring environment variables..."
   echo "export QT_QPA_PLATFORM=wayland"
   echo "export MOZ_ENABLE_WAYLAND=1"
 } >> /etc/profile
-check_command "Updating /etc/profile with environment variables"
 
-# Reload environment variables for this session
-source /etc/profile
+# Reload them for the current shell
+. /etc/profile
 
 ##############################################
-# Create default config files for Sway & Alacritty
+# 6) Create default configs for Sway & Alacritty
 ##############################################
-echo "Creating default Sway configuration..."
 mkdir -p ~/.config/sway
-check_command "mkdir ~/.config/sway"
-
 curl -o ~/.config/sway/config \
   https://raw.githubusercontent.com/swaywm/sway/master/config
-check_command "Downloading default Sway config"
 
-echo "Creating default Alacritty configuration..."
 mkdir -p ~/.config/alacritty
-check_command "mkdir ~/.config/alacritty"
-
 curl -o ~/.config/alacritty/alacritty.yml \
   https://raw.githubusercontent.com/alacritty/alacritty/master/alacritty.yml
-check_command "Downloading default Alacritty config"
 
-# Ensure config files exist
-if [ ! -f ~/.config/sway/config ]; then
-  echo "Sway configuration file missing. Check your setup." >&2
-  exit 1
-fi
-
-if [ ! -f ~/.config/alacritty/alacritty.yml ]; then
-  echo "Alacritty config file missing. Check your setup." >&2
-  exit 1
-fi
+# Verify they exist
+[ ! -f ~/.config/sway/config ] && { echo "Missing Sway config"; exit 1; }
+[ ! -f ~/.config/alacritty/alacritty.yml ] && { echo "Missing Alacritty config"; exit 1; }
 
 ##############################################
-# Launch Sway
+# 7) (Optionally) Launch Sway directly
 ##############################################
-echo "Starting Sway session..."
-
-# Option 1: Directly launch Sway (common for Wayland)
 exec sway
 
-# Option 2 (commented out): Using startx if you have a .xinitrc with 'exec sway'
+# If you prefer startx (with .xinitrc that calls 'exec sway'), do:
 # startx
-# check_command "startx"
-
-echo "Sway installation and setup complete!"
