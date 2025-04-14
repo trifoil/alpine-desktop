@@ -1,21 +1,60 @@
 #!/bin/sh
+set -e  # Exit immediately if a command exits with a non-zero status
 
-# Fonction pour vérifier le succès d'une commande
+##############################################
+# Function to check if the previous command succeeded
+##############################################
 check_command() {
   if [ $? -ne 0 ]; then
-    echo "Erreur lors de l'exécution de la commande: $1" >&2
+    echo "Error during command execution: $1" >&2
     exit 1
   fi
 }
 
-# Mise à jour des dépôts et installation des dépendances
-echo "Mise à jour des dépôts et installation des dépendances..."
+##############################################
+# Ensure the Alpine community repository is enabled
+##############################################
+if ! grep -q "community" /etc/apk/repositories; then
+  echo "Community repository not found. Adding it..."
+
+  # Determine Alpine version if possible
+  if [ -f /etc/alpine-release ]; then
+    ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release)
+  else
+    echo "Alpine release file not found. Using default 'latest' tag for repository URL." >&2
+    ALPINE_VERSION="latest"
+  fi
+
+  # Try to base the community repo URL on an existing main repo line
+  MAIN_REPO=$(grep "/main" /etc/apk/repositories | head -n1)
+  if [ -n "$MAIN_REPO" ]; then
+    # Replace '/main' with '/community' in the URL
+    COMMUNITY_REPO=$(echo "$MAIN_REPO" | sed 's/\/main/\/community/')
+  else
+    # Fallback URL if no main repo is detected
+    COMMUNITY_REPO="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/community"
+  fi
+
+  # Append the community repository to the repositories file
+  echo "$COMMUNITY_REPO" >> /etc/apk/repositories
+  check_command "Adding community repository"
+
+  echo "Added community repository: $COMMUNITY_REPO"
+fi
+
+##############################################
+# Update repositories and installed packages
+##############################################
+echo "Updating repositories and upgrading packages..."
 apk update
 check_command "apk update"
 
 apk upgrade
 check_command "apk upgrade"
 
+##############################################
+# Install required packages from main and community repositories
+##############################################
 apk add --no-cache \
   sway \
   alacritty \
@@ -36,32 +75,34 @@ apk add --no-cache \
   noto-fonts-emoji \
   python3 \
   py3-pip \
-  i3bar \
   mesa-dri
 check_command "apk add dependencies"
 
-# Installer swaybar et swaybg
+# Install additional Sway utilities
 apk add --no-cache swaybar swaybg
-check_command "apk add swaybar swaybg"
+check_command "apk add swaybar and swaybg"
 
-# Activer et démarrer dbus
-echo "Activation et démarrage de dbus..."
-rc-update add dbus
+##############################################
+# Enable and start essential services
+##############################################
+echo "Enabling and starting dbus..."
+rc-update add dbus default
 check_command "rc-update add dbus"
 
 service dbus start
 check_command "service dbus start"
 
-# Activer NetworkManager
-echo "Activation et démarrage de NetworkManager..."
-rc-update add networkmanager
+echo "Enabling and starting NetworkManager..."
+rc-update add networkmanager default
 check_command "rc-update add networkmanager"
 
 service networkmanager start
 check_command "service networkmanager start"
 
-# Configurer les variables d'environnement pour Sway
-echo "Configuration des variables d'environnement..."
+##############################################
+# Configure environment variables for Wayland/Sway sessions
+##############################################
+echo "Configuring environment variables..."
 {
   echo "export XDG_SESSION_TYPE=wayland"
   echo "export XDG_SESSION_DESKTOP=sway"
@@ -70,43 +111,52 @@ echo "Configuration des variables d'environnement..."
   echo "export QT_QPA_PLATFORM=wayland"
   echo "export MOZ_ENABLE_WAYLAND=1"
 } >> /etc/profile
+check_command "Updating /etc/profile with environment variables"
 
-check_command "Modification de /etc/profile"
-
-# Recharger les variables d'environnement
+# Reload environment variables for current session
 source /etc/profile
 
-# Créer le fichier de configuration de Sway
-echo "Création de la configuration par défaut de Sway..."
+##############################################
+# Create default configuration files for Sway and Alacritty
+##############################################
+echo "Creating default Sway configuration..."
 mkdir -p ~/.config/sway
-check_command "mkdir ~/.config/sway"
+check_command "Creating ~/.config/sway directory"
 
 curl -o ~/.config/sway/config https://raw.githubusercontent.com/swaywm/sway/master/config
-check_command "curl -o ~/.config/sway/config"
+check_command "Downloading default Sway configuration"
 
-# Configurer Alacritty
-echo "Configuration de Alacritty..."
+echo "Creating default Alacritty configuration..."
 mkdir -p ~/.config/alacritty
-check_command "mkdir ~/.config/alacritty"
+check_command "Creating ~/.config/alacritty directory"
 
 curl -o ~/.config/alacritty/alacritty.yml https://raw.githubusercontent.com/alacritty/alacritty/master/alacritty.yml
-check_command "curl -o ~/.config/alacritty/alacritty.yml"
+check_command "Downloading default Alacritty configuration"
 
-# Vérifier que les fichiers de configuration existent avant de démarrer Sway
+# Verify that configuration files exist
 if [ ! -f ~/.config/sway/config ]; then
-  echo "Le fichier de configuration Sway est manquant. Veuillez vérifier la configuration."
+  echo "Sway configuration file missing. Please verify your setup." >&2
   exit 1
 fi
 
 if [ ! -f ~/.config/alacritty/alacritty.yml ]; then
-  echo "Le fichier de configuration Alacritty est manquant. Veuillez vérifier la configuration."
+  echo "Alacritty configuration file missing. Please verify your setup." >&2
   exit 1
 fi
 
-# Démarrer Sway
-echo "Démarrage de Sway..."
-startx
-check_command "startx"
+##############################################
+# Launch Sway
+##############################################
+echo "Starting Sway session..."
 
-# Afficher le message de fin
-echo "Installation et configuration de Sway terminées avec succès !"
+# Choose one of the following options to launch Sway:
+#
+# Option 1: Using startx (Make sure you have an appropriate .xinitrc with 'exec sway')
+# startx
+# check_command "startx"
+#
+# Option 2: Directly executing Sway (commonly used in Wayland sessions)
+exec sway
+
+# If sway exits and you're still in the script, the following line will not be reached.
+echo "Installation and configuration of Sway completed successfully!"
