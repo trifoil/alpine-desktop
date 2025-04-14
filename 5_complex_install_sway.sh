@@ -1,8 +1,11 @@
 #!/bin/bash
 # Script d'installation et de lancement de sway sur Alpine Linux.
-# Il vérifie la version d’Alpine, propose de corriger les dépôts en cas de version obsolète
-# ou de référence invalide (par exemple v3.22), installe sway et ses dépendances,
+# Ce script vérifie la version d’Alpine, propose de corriger les dépôts en cas de version obsolète
+# ou de référence invalide (ex: v3.22), installe sway et ses dépendances,
 # gère le choix/création d'un utilisateur non-root, prépare la configuration et lance sway.
+#
+# De plus, il s'assure que le répertoire XDG_RUNTIME_DIR est créé avec les droits corrects,
+# et, si disponible, utilise seatd (via seatd-launch) pour la gestion de la session.
 #
 # Usage :
 #   ./install_sway.sh [-u USER]
@@ -207,6 +210,12 @@ apk add --no-cache sway swaybg swaylock swayidle waybar wofi grim slurp || \
 echo "Installation du terminal alacritty (optionnel)..."
 apk add --no-cache alacritty || echo "Attention : l'installation d'alacritty a échoué. Vous pouvez installer un terminal de votre choix."
 
+# Installation de seatd (recommandé pour gérer la session sur Alpine)
+if ! command -v seatd-launch > /dev/null 2>&1; then
+    echo "Installation de seatd (recommandé pour la gestion de session)..."
+    apk add --no-cache seatd || echo "Attention : l'installation de seatd a échoué. Vérifiez votre configuration."
+fi
+
 ########################################################################
 # Préparation de la configuration de sway pour l'utilisateur cible
 ########################################################################
@@ -253,10 +262,13 @@ fi
 echo "Configuration de sway terminée."
 
 ########################################################################
-# Définition des variables d'environnement et lancement de sway
+# Préparation de l'environnement pour Sway
 ########################################################################
-# Récupération de l'UID de l'utilisateur pour définir XDG_RUNTIME_DIR
+
+# Récupération de l'UID de l'utilisateur cible
 TARGET_UID=$(id -u "$TARGET_USER")
+
+# Définition des variables d'environnement
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=sway
 export XDG_RUNTIME_DIR="/run/user/${TARGET_UID}"
@@ -266,7 +278,30 @@ echo "  XDG_SESSION_TYPE=${XDG_SESSION_TYPE}"
 echo "  XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP}"
 echo "  XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}"
 
+# S'assurer que le répertoire XDG_RUNTIME_DIR existe et a les bonnes permissions
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    echo "Création du répertoire $XDG_RUNTIME_DIR..."
+    mkdir -p "$XDG_RUNTIME_DIR" || error_exit "Impossible de créer $XDG_RUNTIME_DIR."
+    chown "$TARGET_USER":"$TARGET_USER" "$XDG_RUNTIME_DIR"
+    chmod 700 "$XDG_RUNTIME_DIR"
+fi
+
+########################################################################
+# Déterminer la commande de lancement de sway avec seatd si disponible
+########################################################################
+if command -v seatd-launch >/dev/null 2>&1; then
+    SWAY_CMD="seatd-launch sway"
+else
+    SWAY_CMD="sway"
+fi
+
+########################################################################
+# Lancement de sway pour l'utilisateur cible
+########################################################################
 echo "Lancement de sway pour l'utilisateur $TARGET_USER..."
-su - "$TARGET_USER" -c "env XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=sway XDG_RUNTIME_DIR=/run/user/${TARGET_UID} sway" || error_exit "Échec du lancement de sway."
+# Utiliser 'su' sans le '-' pour préserver l'environnement
+su "$TARGET_USER" -c "env XDG_SESSION_TYPE=${XDG_SESSION_TYPE} \
+    XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP} \
+    XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR} ${SWAY_CMD}" || error_exit "Échec du lancement de sway."
 
 echo "Script terminé avec succès."
