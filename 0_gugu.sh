@@ -4,14 +4,14 @@ set -e
 echo "🚀 Setting up Polybar for Sway (Alpine Linux)..."
 
 # ===== 1. Install Dependencies =====
-echo "📦 Installing packages..."
-doas apk add --no-cache \
-    polybar \
-    jq \
-    font-dejavu \
-    ttf-font-awesome \
-    pavucontrol \     # For volume control
-    brightnessctl     # For brightness keys
+echo "📦 Installing dependencies..."
+doas apk add polybar 
+doas apk add jq 
+doas apk add font-dejavu 
+doas apk add ttf-font-awesome 
+doas apk add pavucontrol       # PulseAudio control (volume)
+doas apk add brightnessctl      # Brightness control
+
 
 # ===== 2. Configure Sway =====
 SWAY_CONFIG="${SWAY_CONFIG:-$HOME/.config/sway/config}"
