@@ -1,81 +1,107 @@
 #!/bin/sh
 set -e
 
-echo "🚀 Setting up Polybar for Sway on Alpine Linux..."
+echo "🚀 Setting up Polybar for Sway (Alpine Linux)..."
 
-# 1. Install required packages
-echo "📦 Installing dependencies..."
-doas apk add polybar 
-doas apk add jq 
-doas apk add font-dejavu 
-doas apk add ttf-font-awesome 
-doas apk add pavucontrol       # PulseAudio control (volume)
-doas apk add brightnessctl      # Brightness control
+# ===== 1. Install Dependencies =====
+echo "📦 Installing packages..."
+doas apk add --no-cache \
+    polybar \
+    jq \
+    font-dejavu \
+    ttf-font-awesome \
+    pavucontrol \     # For volume control
+    brightnessctl     # For brightness keys
 
-# 2. Create config directories
+# ===== 2. Configure Sway =====
+SWAY_CONFIG="${SWAY_CONFIG:-$HOME/.config/sway/config}"
+mkdir -p "$(dirname "$SWAY_CONFIG")"
+
+# Create basic Sway config if none exists
+if [ ! -f "$SWAY_CONFIG" ]; then
+    echo "ℹ️ Creating default Sway config..."
+    cat > "$SWAY_CONFIG" << 'EOL'
+# Default Sway config with Polybar
+set $mod Mod4
+bindsym $mod+Return exec foot
+bindsym $mod+d exec wmenu-run
+
+# Polybar integration
+exec_always ~/.config/polybar/launch.sh
+EOL
+fi
+
+# ===== 3. Set Up Polybar =====
 mkdir -p ~/.config/polybar
-mkdir -p ~/.config/sway
 
-# 3. Basic Polybar config (Sway-compatible)
+# ---- Config File ----
 cat > ~/.config/polybar/config.ini << 'EOL'
 [colors]
-background = #222222
-foreground = #ffffff
+background = #2E3440
+foreground = #D8DEE9
+primary = #81A1C1
+alert = #BF616A
 
-[bar/top]
+[bar/main]
 monitor = ${env:MONITOR}
 width = 100%
 height = 24
-offset-y = 0
+offset-y = 1
 background = ${colors.background}
 foreground = ${colors.foreground}
+line-size = 2
+module-margin = 1
 
 modules-left = sway/workspaces
 modules-center = sway/window
-modules-right = date
+modules-right = pulseaudio date
 
 [module/sway/workspaces]
 type = internal/sway/workspaces
-format = <label-state>
 label-focused = %name%
+label-focused-background = ${colors.primary}
 label-unfocused = %name%
 
 [module/sway/window]
 type = internal/sway/window
-format = <label>
 label = %title%
+
+[module/pulseaudio]
+type = internal/pulseaudio
+format-volume = <ramp-volume> <label-volume>
+label-volume = %percentage%%
+ramp-volume-0 = 🔈
+ramp-volume-1 = 🔉
+ramp-volume-2 = 🔊
 
 [module/date]
 type = internal/date
 interval = 1
-date = %H:%M:%S
+date = %Y-%m-%d %H:%M
 label = %date%
 EOL
 
-# 4. Launch script (now checks for Sway IPC)
+# ---- Launch Script ----
 cat > ~/.config/polybar/launch.sh << 'EOL'
 #!/bin/sh
+# Kill existing instances
 killall -q polybar
+
+# Wait until processes exit
 while pgrep -x polybar >/dev/null; do sleep 0.5; done
 
-# Get primary monitor (Alpine + Sway)
-MONITOR=$(swaymsg -t get_outputs | jq -r '.[0].name')
+# Get monitor name (fallback to first available)
+MONITOR=$(swaymsg -t get_outputs | jq -r '.[0].name' || echo "eDP-1")
 export MONITOR
 
-# Start Polybar
-polybar -q top &
+# Launch Polybar
+polybar -q main &
 EOL
 chmod +x ~/.config/polybar/launch.sh
 
-# 5. Update Sway config
-if [ -f ~/.config/sway/config ]; then
-    sed -i '/^bar {/,/^}/d' ~/.config/sway/config  # Remove default bar
-    grep -q "polybar/launch.sh" ~/.config/sway/config || \
-        echo -e "\n# Launch Polybar\nexec_always ~/.config/polybar/launch.sh" >> ~/.config/sway/config
-else
-    echo "⚠️ Sway config not found at ~/.config/sway/config"
-    echo "Add this line manually:"
-    echo "exec_always ~/.config/polybar/launch.sh"
+# ===== 4. Update Sway Config =====
+if ! grep -q "polybar/launch.sh" "$SWAY_CONFIG"; then
+    echo -e "\n# Launch Polybar\nexec_always ~/.config/polybar/launch.sh" >> "$SWAY_CONFIG"
 fi
 
 echo "✅ Done! Restart Sway (Mod+Shift+e)."
