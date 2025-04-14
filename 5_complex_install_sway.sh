@@ -5,7 +5,7 @@
 # gère le choix/création d'un utilisateur non-root, prépare la configuration et lance sway.
 #
 # De plus, il s'assure que le répertoire XDG_RUNTIME_DIR est créé avec les droits corrects,
-# et, si disponible, utilise seatd (via seatd-launch) pour la gestion de la session.
+# et, si disponible, utilise seatd (via seatd-launch) pour lancer sway dans un environnement de gestion de session.
 #
 # Usage :
 #   ./install_sway.sh [-u USER]
@@ -211,7 +211,7 @@ echo "Installation du terminal alacritty (optionnel)..."
 apk add --no-cache alacritty || echo "Attention : l'installation d'alacritty a échoué. Vous pouvez installer un terminal de votre choix."
 
 # Installation de seatd (recommandé pour gérer la session sur Alpine)
-if ! command -v seatd-launch > /dev/null 2>&1; then
+if ! command -v seatd-launch >/dev/null 2>&1; then
     echo "Installation de seatd (recommandé pour la gestion de session)..."
     apk add --no-cache seatd || echo "Attention : l'installation de seatd a échoué. Vérifiez votre configuration."
 fi
@@ -289,9 +289,13 @@ fi
 ########################################################################
 # Déterminer la commande de lancement de sway avec seatd si disponible
 ########################################################################
-if command -v seatd-launch >/dev/null 2>&1; then
-    SWAY_CMD="seatd-launch sway"
+# Tenter de récupérer le chemin complet de seatd-launch.
+seatd_path=$(command -v seatd-launch 2>/dev/null || true)
+if [ -n "$seatd_path" ] && [ -x "$seatd_path" ]; then
+    echo "seatd-launch trouvé: $seatd_path"
+    SWAY_CMD="${seatd_path} sway"
 else
+    echo "seatd-launch non trouvé. S'ensuivra le lancement direct de sway."
     SWAY_CMD="sway"
 fi
 
@@ -299,7 +303,7 @@ fi
 # Lancement de sway pour l'utilisateur cible
 ########################################################################
 echo "Lancement de sway pour l'utilisateur $TARGET_USER..."
-# Utiliser 'su' sans le '-' pour préserver l'environnement
+# Utiliser 'su' sans le '-' pour préserver l'environnement complet (notamment PATH).
 su "$TARGET_USER" -c "env XDG_SESSION_TYPE=${XDG_SESSION_TYPE} \
     XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP} \
     XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR} ${SWAY_CMD}" || error_exit "Échec du lancement de sway."
